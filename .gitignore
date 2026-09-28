@@ -1,0 +1,25 @@
+# Generated test output
+/artifacts/
+
+# Frontend dependencies and build output
+/frontend/node_modules/
+/frontend/dist/
+/frontend/build/
+
+# Backend dependencies and build output
+/backend/node_modules/
+/backend/target/
+/backend/build/
+
+# IDE and local environment files
+.idea/
+.vscode/
+*.user
+*.suo
+*.swp
+*.log
+
+# Local secrets
+.env
+.env.*
+!.env.example
