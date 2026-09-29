@@ -1,1 +1,9 @@
-# Development profile placeholder. Add local-only settings through environment variables or an ignored override.
+# Local development uses PostgreSQL connection details from the ignored root .env file.
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES}?sslmode=require
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none

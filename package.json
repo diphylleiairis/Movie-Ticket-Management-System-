@@ -1,0 +1,13 @@
+{
+  "name": "movie-ticket-management-system",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "tests/e2e/testcafe"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/install-backend.mjs",
+    "build:frontend": "npm run build --workspace frontend",
+    "lint:frontend": "npm run lint --workspace frontend"
+  }
+}

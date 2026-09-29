@@ -1,0 +1,8 @@
+{
+  "name": "movie-ticket-testcafe",
+  "private": true,
+  "version": "0.0.0",
+  "devDependencies": {
+    "testcafe": "^3.7.6"
+  }
+}

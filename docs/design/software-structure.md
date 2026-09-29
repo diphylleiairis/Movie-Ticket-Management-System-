@@ -117,7 +117,9 @@ module/
 
 Development, testing, and production use separate configuration profiles. Secrets and provider credentials are supplied through environment variables and are never committed.
 
-Automated tests use an isolated test database. The fake payment provider is used for development and automated tests; a real provider is enabled only in a controlled environment.
+For local development, the Spring Boot dotenv integration may read the ignored repository-root `.env` file. Deployed environments supply real environment variables, which take precedence over `.env` values.
+
+Automated tests that change data use an isolated test database. During initial setup, the context-load smoke test may use the project database already configured in the local `.env`, as approved for the current empty database. `TEST_DB_*` values take precedence when a separate test database is configured. The fake payment provider is used for development and automated tests; a real provider is enabled only in a controlled environment.
 
 ## Testing strategy
 
