@@ -1,1 +1,11 @@
-# Test profile placeholder. Use an isolated test database and the fake payment provider.
+# Prefer a dedicated test database when TEST_DB_* is configured. The current
+# context-load smoke test can fall back to the existing PostgreSQL connection.
+
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES}?sslmode=require}
+    username: ${TEST_DB_USER:${POSTGRES_USER}}
+    password: ${TEST_DB_PASSWORD:${POSTGRES_PASSWORD}}
+  jpa:
+    hibernate:
+      ddl-auto: none
