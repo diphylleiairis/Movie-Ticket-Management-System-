@@ -9,5 +9,8 @@
     "postinstall": "node scripts/install-backend.mjs",
     "build:frontend": "npm run build --workspace frontend",
     "lint:frontend": "npm run lint --workspace frontend"
+  },
+  "dependencies": {
+    "lucide-react": "^1.49.0"
   }
 }

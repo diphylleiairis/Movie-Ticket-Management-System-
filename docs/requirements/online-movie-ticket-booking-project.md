@@ -152,12 +152,16 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given the customer is not registered, when valid required registration data is submitted, then the system creates an account.
 - Given the submitted email already exists, when registration is submitted, then registration is rejected.
 - Given required information is missing or invalid, when the form is submitted, then validation errors are shown and no account is created.
+- Given email registration succeeds, the system sends a six-digit numeric code and displays six input boxes; the account becomes active only after successful server verification.
+- Given a code is invalid or expired, verification is rejected; the customer can request a new code and try again.
+- Given Google or Apple ID registration is configured, the customer may use that provider; account activation and role provisioning follow the Identity rules in `AGENTS.md`.
 
 ### ID-02 — Login and logout
 - Given a registered user enters valid credentials, when login is submitted, then an authenticated session is created.
 - Given invalid credentials are submitted, when login is attempted, then authentication is rejected.
 - Given an authenticated user selects Logout, when logout succeeds, then the session is terminated.
 - Given a seeded Admin or Cinema Staff account enters valid credentials, when login succeeds, then the user receives the correct role.
+- Given Google or Apple ID sign-in is configured, provider authentication is validated by the backend before an application session is created.
 
 ### ID-03 — Password reset
 - Given a registered customer requests password reset, when the request is accepted, then the reset process starts.
@@ -217,10 +221,12 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given a seat is AVAILABLE, when displayed, then it is selectable.
 - Given a seat is HELD or BOOKED by another customer, when displayed, then it is unavailable.
 - Given the customer's booking has held seats, when they return to the seat page, then those seats remain associated with the active hold.
+- Given 10 seats are selected, additional seats cannot be selected until a selected seat is removed; the selection count and limit are displayed.
 
 ### BKG-03 — Hold seats
 - Given E5 is AVAILABLE, when the customer confirms E5, then E5 becomes HELD for 10 minutes.
 - Given E5 is no longer AVAILABLE when confirmation is processed, then the request is rejected.
+- Given a request contains more than 10 seats for one Booking, then the server rejects it without creating a hold.
 - Given the 10-minute hold expires without successful confirmation, then seats return to AVAILABLE.
 - Given payment FAILS while the hold is active, then seats remain HELD until the original timeout.
 - Given the booking/session is explicitly terminated before payment succeeds, then held seats are released.
