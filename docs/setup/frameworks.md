@@ -25,7 +25,7 @@ The JDK path above is an example from the local machine; use the path to your ow
 
 | Area | Declared dependencies | Manifest |
 |---|---|---|
-| Frontend runtime | React 19, React DOM 19 | `frontend/package.json` |
+| Frontend runtime | React 19, React DOM 19, Lucide React icons, React Router 7, qrcode.react 4 | `frontend/package.json` |
 | Frontend build and lint | TypeScript 6, Vite 8, React Vite plugin, ESLint and React lint plugins | `frontend/package.json` |
 | Browser E2E | TestCafe 3 | `tests/e2e/testcafe/package.json` |
 | Backend | Spring Boot 4.1.1, Web MVC, Data JPA, Security, Validation, PostgreSQL JDBC driver, Lombok, Spring Boot 4 dotenv integration, backend test starters | `backend/pom.xml` |
@@ -33,6 +33,8 @@ The JDK path above is an example from the local machine; use the path to your ow
 The root `package.json` uses npm workspaces for the frontend and TestCafe. Its `postinstall` script calls `backend/mvnw` (`mvnw.cmd` on Windows) with `dependency:go-offline` to download Maven-managed backend dependencies. npm does not manage Java packages itself. PostgreSQL is a database service, so `npm install` does not install or create a PostgreSQL server or Supabase project.
 
 The root `package-lock.json` pins the installed JavaScript dependency versions. Maven resolves backend versions from `backend/pom.xml` and the Spring Boot parent. Run dependency installation from the repository root so npm includes both workspaces and the backend postinstall step.
+
+When adding a frontend npm library, declare it in `frontend/package.json` and update the root `package-lock.json`. This keeps the one-command root installation complete and reproducible.
 
 ## After installation
 

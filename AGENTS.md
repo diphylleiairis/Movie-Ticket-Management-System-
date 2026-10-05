@@ -44,6 +44,7 @@ Agents MUST read the project documentation before planning, implementing, refact
 
 Customers:
 - Must have a registered account.
+- May register/sign in using email/password or configured Google and Apple ID providers. Social registration creates Customer accounts and preserves the email-verification rules below.
 - Must verify the registration email before the account becomes active for normal use.
 - Must authenticate before purchasing tickets.
 - Can browse active movies.
@@ -68,9 +69,9 @@ Email verification is required both during initial customer registration and whe
 ### Registration
 - A customer must provide a valid email address.
 - The email must be unique among customer accounts.
-- The system must start an email-verification process.
+- The system must send a six-digit numeric verification code to the registration email, and provide a six-digit code entry step and resend action.
 - The account must not be treated as fully active until the registration email is successfully verified.
-- An invalid or expired verification token must not activate the account.
+- The server must validate the registration verification code; an invalid or expired code must not activate the account.
 
 ### Email Change
 - An authenticated customer may request a change to their email address.
@@ -257,6 +258,8 @@ Rules:
 ---
 
 ## 8. Seat State Model
+
+A customer may select at most 10 seats for one Booking. At the limit, the UI must allow deselection while preventing additional selections. The server must enforce the same limit when processing a seat-hold request.
 
 Seat states:
 

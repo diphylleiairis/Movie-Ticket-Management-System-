@@ -71,6 +71,10 @@ tests/
 └── traceability/
 ```
 
+## Frontend routing
+
+React Router provides browser routing. `frontend/src/routes/app-routes.tsx` defines page routes, and `frontend/src/main.tsx` mounts them inside `BrowserRouter`. Identity owns a shared account layout with nested login, registration, and password-reset routes rendered through `<Outlet />`. Internal account links use React Router `Link` to preserve the layout during navigation. Deployment must serve the frontend entry document for direct browser requests to frontend page routes while keeping `/api/v1/` requests routed to the backend.
+
 ## Backend module structure
 
 Each business module follows the same internal structure:

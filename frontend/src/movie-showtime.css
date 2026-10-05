@@ -1,0 +1,33 @@
+.showtime-page { width: 100%; height: 100dvh; overflow-y: auto; background: #f7f4ed; color: #171717; }
+.showtime-page > main { padding-top: 94px; }
+.showtime-hero { height: clamp(230px, 24vw, 360px); display: flex; align-items: end; background-size: cover; background-position: center 42%; color: white; }
+.showtime-hero > div { width: 100%; padding: 0 clamp(24px, 4.5vw, 72px) 32px; }
+.showtime-hero small { font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+.showtime-hero h1 { margin: 12px 0 0; font-size: clamp(32px, 4vw, 56px); font-weight: 400; letter-spacing: -.045em; }
+.showtime-content { display: grid; grid-template-columns: minmax(210px, 30%) minmax(0, 1fr); gap: clamp(28px, 4vw, 56px); max-width: 1450px; margin: auto; padding: 52px clamp(24px, 4.5vw, 72px) 70px; }
+.showtime-movie img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 6px; display: block; }
+.showtime-movie dl { margin: 14px 0; font-size: 12px; }
+.showtime-movie dl div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #e5ded4; }
+.showtime-movie dt { color: #77716a; }
+.showtime-movie dd { margin: 0; text-align: right; font-weight: 600; }
+.showtime-details section { padding-bottom: 28px; margin-bottom: 27px; border-bottom: 1px solid #e5ded4; }
+.showtime-details section:last-child { border: 0; margin-bottom: 0; }
+.showtime-details h2 { margin: 0 0 18px; font-size: 22px; font-weight: 400; }
+.showtime-synopsis p { max-width: 800px; margin: 0; color: #77716a; font-size: 13px; line-height: 1.7; }
+.date-options, .time-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.date-options button { min-width: 58px; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 12px; border: 1px solid #e5ded4; border-radius: 5px; background: white; color: #222; }
+.date-options small { font-size: 9px; }
+.date-options span { font-size: 17px; }
+.date-options button.selected, .time-options button.selected { background: #171717; border-color: #171717; color: white; }
+.showtime-demo-note { margin: -5px 0 16px; color: #8a8176; font-size: 11px; }
+.cinema-showtimes { margin-bottom: 18px; padding: 20px; background: white; border: 1px solid #e5ded4; border-radius: 8px; }
+.cinema-heading h3 { display: flex; align-items: center; flex-wrap: wrap; margin: 0 0 5px; font-size: 13px; }
+.cinema-heading p { display: flex; align-items: center; flex-wrap: wrap; margin: 0 0 16px; color: #77716a; font-size: 11px; }
+.time-options button { padding: 9px 13px; border: 1px solid #e5ded4; border-radius: 4px; background: white; font-size: 11px; }
+.showtime-missing { padding: 48px; }
+.showtime-continue { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding-top: 8px; }
+.showtime-continue p { flex: 1; min-width: 200px; margin: 0; color: #77716a; font-size: 13px; line-height: 1.6; }
+.showtime-continue button { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 46px; padding: 12px 22px; border: 1px solid #111; border-radius: 5px; background: #111; color: white; font-size: 12px; font-weight: 600; }
+.showtime-continue button:hover:not(:disabled) { background: #333; }
+.showtime-continue button:disabled { cursor: not-allowed; border-color: #d8d3ca; background: #e7e2d9; color: #77716a; }
+@media (max-width: 650px) { .showtime-page > main { padding-top: 72px; } .showtime-hero { height: 210px; } .showtime-content { grid-template-columns: 1fr; padding-top: 28px; } .showtime-movie { display: grid; grid-template-columns: 110px 1fr; align-items: start; gap: 16px; } .showtime-movie dl { margin-top: 0; } .showtime-details h2 { font-size: 19px; } }
