@@ -35,3 +35,15 @@ _Avoid_: direct repository access, hidden dependency
 **Test environment**:
 An isolated runtime and database used to execute automated tests without changing development data.
 _Avoid_: production environment, developer database
+
+**Ticket**:
+A confirmed proof of purchase for one Booking, with one QR code covering all of its purchased seats.
+_Avoid_: per-seat QR
+
+**Check-in**:
+A staff-confirmed admission of a specified number of people using a Ticket for its Showtime. A Ticket may cover multiple check-ins by groups arriving separately.
+_Avoid_: scan alone, full-ticket consumption
+
+**Remaining admissions**:
+The number of purchased seats on a confirmed Booking minus the cumulative number of people admitted using its Ticket.
+_Avoid_: available seats, remaining seat holds

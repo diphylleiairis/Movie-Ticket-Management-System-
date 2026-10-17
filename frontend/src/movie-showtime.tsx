@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { ArrowRight, Dot } from "lucide-react";
 import { demoCinemas, demoShowtimeDates, demoShowtimeHeroLabel, movies, readDemoScreening, seatSelectionPath, showtimeDateKey } from "./demo-movie-data";
 import SiteHeader from "./site-header";
+import BookingRecovery from "./shared/booking-recovery";
+import ErrorPage from "./shared/error-page";
 import "./movie-showtime.css";
 
 const dates = demoShowtimeDates();
@@ -20,12 +22,7 @@ export default function MovieShowtime() {
 	const [scrolled, setScrolled] = useState(false);
 
 	if (!movie) {
-		return (
-			<main className="showtime-missing">
-				<h1>Movie not found</h1>
-				<a href="/">Back to movies</a>
-			</main>
-		);
+		return params.has("movie") ? <ErrorPage status={404} /> : <BookingRecovery params={params} />;
 	}
 
 	const cinemaIndex = demoCinemas.findIndex((cinema, index) =>

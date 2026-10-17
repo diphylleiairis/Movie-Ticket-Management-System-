@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
+import {
+	Link,
+	useNavigate,
+	useOutletContext,
+	useSearchParams,
+} from "react-router-dom";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Mail } from "lucide-react";
 import type { AuthLayoutContext } from "./auth-layout";
 import { authPagePath, safeReturnTo } from "./auth-navigation";
@@ -140,7 +145,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 	const active = useRef(true);
 	useEffect(() => {
 		active.current = true;
-		return () => { active.current = false; };
+		return () => {
+			active.current = false;
+		};
 	}, []);
 
 	const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -311,13 +318,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							className="auth-submit"
 							type="submit"
 							disabled={
-								pending ||
-								!codeDigits.every((digit) => /^[0-9]$/.test(digit))
+								pending || !codeDigits.every((digit) => /^[0-9]$/.test(digit))
 							}
 						>
-							{verificationAction === "verify"
-								? "VERIFYING…"
-								: "VERIFY EMAIL"}
+							{verificationAction === "verify" ? "VERIFYING…" : "VERIFY EMAIL"}
 							<ArrowRight size={16} aria-hidden="true" />
 						</button>
 					</form>
@@ -378,7 +382,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 										: "Sign in with a provider"
 								}
 							>
-								{(["google", "apple"] as const).map((provider) => (
+								{(["google"] as const).map((provider) => (
 									<button
 										key={provider}
 										type="button"
@@ -386,9 +390,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 										onClick={() => socialAuth(provider)}
 									>
 										<ProviderIcon provider={provider} />
-										<span>
-											{provider === "google" ? "Google" : "Apple ID"}
-										</span>
+										<span>{provider === "google" ? "Google" : "Apple ID"}</span>
 									</button>
 								))}
 							</div>
@@ -457,9 +459,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 										type="checkbox"
 										required
 										checked={acceptedTerms}
-										onChange={(event) =>
-											setAcceptedTerms(event.target.checked)
-										}
+										onChange={(event) => setAcceptedTerms(event.target.checked)}
 									/>
 									<span>
 										I agree to the{" "}
@@ -498,11 +498,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									</div>
 								)
 							)}
-							<button
-								className="auth-submit"
-								type="submit"
-								disabled={pending}
-							>
+							<button className="auth-submit" type="submit" disabled={pending}>
 								{pending
 									? "PLEASE WAIT…"
 									: registration

@@ -45,9 +45,6 @@
 .seat-selection-hint { margin: 14px 0 20px; color: #77716a; font-size: 12px; line-height: 1.6; }
 .seat-selection-back { display: inline-flex; align-items: center; gap: 7px; color: #77716a; font-size: 12px; text-decoration: none; }
 .seat-selection-back:hover { color: #111; text-decoration: underline; text-underline-offset: 3px; }
-.seat-selection-missing { padding: 60px 24px; }
-.seat-selection-missing p { color: #77716a; line-height: 1.6; }
-.seat-selection-missing a { display: inline-flex; align-items: center; gap: 8px; color: #20232a; }
 @media (max-width: 1000px) {
 	.seat-selection-content { grid-template-columns: minmax(0, 1fr); max-width: 850px; padding-top: 110px; gap: 20px; }
 }

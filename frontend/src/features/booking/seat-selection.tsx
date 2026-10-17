@@ -2,11 +2,10 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
 	demoSeatLayout,
-	movies,
-	movieShowtimePath,
 	readDemoScreening,
 } from "../../demo-movie-data";
 import SiteHeader from "../../site-header";
+import BookingRecovery from "../../shared/booking-recovery";
 import { maxSeatsPerBooking } from "./booking-limits";
 import { readDemoSeatSelection, ticketCheckoutPath } from "./selection";
 import "./seat-selection.css";
@@ -23,14 +22,7 @@ export default function SeatSelection() {
 	const columns = Array.from({ length: demoSeatLayout.columns }, (_, index) => index + 1);
 
 	if (!screening) {
-		const movie = movies.find((item) => item.slug === params.get("movie"));
-		return (
-			<main className="seat-selection-missing">
-				<h1>Choose a showtime first</h1>
-				<p>Select a valid date, cinema and showtime before choosing your seats.</p>
-				<a href={movie ? movieShowtimePath(movie) : "/movie-list"}><ArrowLeft size={16} aria-hidden="true" />{movie ? "Back to showtimes" : "Browse movies"}</a>
-			</main>
-		);
+		return <BookingRecovery params={params} />;
 	}
 
 	const { movie, date, cinema, time } = screening;

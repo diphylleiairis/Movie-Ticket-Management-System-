@@ -11,13 +11,10 @@ import {
 	Wine,
 	X,
 } from "lucide-react";
-import {
-	demoConcessions,
-	demoSeatLayout,
-	readDemoScreening,
-} from "../../demo-movie-data";
+import { demoConcessions, demoSeatLayout } from "../../demo-movie-data";
 import { readDemoSeatSelection } from "../booking/selection";
 import SiteHeader from "../../site-header";
+import BookingRecovery from "../../shared/booking-recovery";
 import CardPaymentFields from "./card-payment-fields";
 import "./ticket-checkout.css";
 
@@ -55,27 +52,14 @@ export default function TicketCheckout() {
 	const [extras, setExtras] = useState<string[]>([]);
 	const [paymentMethod, setPaymentMethod] = useState("");
 	const [cardValid, setCardValid] = useState(false);
-	const [paymentStep, setPaymentStep] = useState<"confirm" | "preview">("confirm");
+	const [paymentStep, setPaymentStep] = useState<"confirm" | "preview">(
+		"confirm",
+	);
 	const [scrolled, setScrolled] = useState(false);
 	const paymentPreview = useRef<HTMLDialogElement>(null);
 
 	if (!selection) {
-		const screening = readDemoScreening(params);
-		const backParams = new URLSearchParams(params);
-		backParams.delete("seats");
-		return (
-			<main className="checkout-missing">
-				<h1>Select your seats first</h1>
-				<p>
-					Choose a valid showtime and between 1 and 10 available seats to
-					continue.
-				</p>
-				<a href={screening ? `/seat-selection?${backParams}` : "/movie-list"}>
-					<ArrowLeft size={16} aria-hidden="true" />
-					{screening ? "Back to seat selection" : "Browse movies"}
-				</a>
-			</main>
-		);
+		return <BookingRecovery params={params} checkout />;
 	}
 
 	const { movie, cinema, date, time, seats } = selection;
@@ -92,7 +76,8 @@ export default function TicketCheckout() {
 		0,
 	);
 	const total = ticketSubtotal + extrasSubtotal + demoSeatLayout.serviceFee;
-	const canContinue = paymentMethod === "wallet" || (paymentMethod === "card" && cardValid);
+	const canContinue =
+		paymentMethod === "wallet" || (paymentMethod === "card" && cardValid);
 	const dateLabel = new Intl.DateTimeFormat("en-US", {
 		weekday: "short",
 		month: "short",
@@ -163,7 +148,11 @@ export default function TicketCheckout() {
 							id="ticket-checkout-form"
 							onSubmit={(event) => {
 								event.preventDefault();
-								if (canContinue && event.currentTarget.checkValidity() && !paymentPreview.current?.open) {
+								if (
+									canContinue &&
+									event.currentTarget.checkValidity() &&
+									!paymentPreview.current?.open
+								) {
 									setPaymentStep("confirm");
 									paymentPreview.current?.showModal();
 								}
@@ -254,7 +243,7 @@ export default function TicketCheckout() {
 					<dl className="checkout-line-items">
 						<div>
 							<dt>
-								{seats.length}× {seats.length === 1 ? "Ticket" : "Tickets"}
+								{seats.length}x {seats.length === 1 ? "Ticket" : "Tickets"}
 							</dt>
 							<dd>{formatPrice(ticketSubtotal)}</dd>
 						</div>
@@ -319,7 +308,11 @@ export default function TicketCheckout() {
 					aria-hidden="true"
 				/>
 				<h2 id="checkout-provider-title">
-					{paymentStep === "confirm" ? "Confirm payment" : paymentMethod === "wallet" ? "QR banking" : "Payment preview"}
+					{paymentStep === "confirm"
+						? "Confirm payment"
+						: paymentMethod === "wallet"
+							? "QR banking"
+							: "Payment preview"}
 				</h2>
 				<p>
 					{paymentStep === "confirm"
@@ -347,10 +340,17 @@ export default function TicketCheckout() {
 					</div>
 				</dl>
 				{paymentMethod === "wallet" && paymentStep === "preview" && (
-					<div className="checkout-wallet-panel" aria-labelledby="checkout-wallet-title">
+					<div
+						className="checkout-wallet-panel"
+						aria-labelledby="checkout-wallet-title"
+					>
 						<div className="checkout-wallet-qr">
 							<QRCodeSVG
-								value={JSON.stringify({ type: "DEMO_ONLY_NOT_A_PAYMENT", amount: total, currency: "VND" })}
+								value={JSON.stringify({
+									type: "DEMO_ONLY_NOT_A_PAYMENT",
+									amount: total,
+									currency: "VND",
+								})}
 								size={180}
 								marginSize={4}
 								level="M"
@@ -363,7 +363,9 @@ export default function TicketCheckout() {
 							<p>Pay using your banking or e-wallet app.</p>
 							<span>Total amount</span>
 							<strong>{formatPrice(total)}</strong>
-							<small>Demo QR only. No bank transfer can be made with this code.</small>
+							<small>
+								Demo QR only. No bank transfer can be made with this code.
+							</small>
 						</div>
 					</div>
 				)}

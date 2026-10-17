@@ -1,0 +1,250 @@
+.error-page,
+.booking-recovery {
+	flex: 1;
+	min-height: 0;
+	height: 100dvh;
+	overflow-y: auto;
+	padding: 38px clamp(24px, 6vw, 96px) 24px;
+}
+.recovery-brand {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 6px;
+	color: inherit;
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-decoration: none;
+}
+.recovery-brand span {
+	font-size: 9px;
+	letter-spacing: 0.35em;
+	font-weight: 400;
+}
+.error-page {
+	display: flex;
+	flex-direction: column;
+	color: #fff8ef;
+	background:
+		linear-gradient(90deg, #090303d9, #10030386),
+		url("/images/cinema_stage.jpg") center / cover;
+}
+.error-page-content {
+	width: min(610px, 100%);
+	margin-block: auto;
+	padding-block: 48px;
+}
+.recovery-eyebrow {
+	margin: 0 0 18px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	line-height: 1.7;
+	color: #b78554;
+}
+.error-page .recovery-eyebrow {
+	color: #f3c190;
+}
+.error-page-code {
+	display: block;
+	font-family: Georgia, serif;
+	font-size: clamp(88px, 14vw, 160px);
+	line-height: 1;
+	color: #f3c190;
+}
+.error-page h1,
+.booking-recovery h1 {
+	margin: 20px 0 16px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: clamp(30px, 4vw, 48px);
+	font-weight: 400;
+	line-height: 1.15;
+	text-wrap: balance;
+}
+.recovery-description {
+	max-width: 470px;
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.8;
+	color: #d7c9c2;
+}
+.recovery-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 18px 28px;
+	margin-top: 32px;
+}
+.recovery-primary,
+.recovery-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	min-height: 48px;
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 600;
+}
+.recovery-primary {
+	padding: 14px 22px;
+	border: 1px solid #a46a34;
+	border-radius: 6px;
+	background: #a46a34;
+	color: white;
+	transition: background 0.2s;
+}
+.recovery-primary:hover {
+	background: #895426;
+}
+.recovery-secondary {
+	color: white;
+	padding: 14px 22px;
+	border: 1px solid #a46a34;
+	background: #1a1a1a;
+	border-radius: 6px;
+}
+.recovery-secondary:hover {
+	text-decoration: underline;
+	background: #000000;
+}
+.error-page-footer {
+	margin: 0;
+	font-size: 9px;
+	letter-spacing: 0.16em;
+	line-height: 1.8;
+	color: #d7c9c2;
+}
+.error-page-server {
+	color: #32211d;
+	background:
+		linear-gradient(
+			90deg,
+			#ffc1b0 0%,
+			#ffc1b0f5 30%,
+			#ffc1b099 52%,
+			#ffc1b000 75%
+		),
+		url("/images/maintenance.png") center / cover;
+}
+.error-page-server .error-page-content {
+	width: min(490px, 48%);
+}
+.error-page-server .error-page-code {
+	color: #963e28;
+}
+.error-page-server .recovery-eyebrow,
+.error-page-server .recovery-description,
+.error-page-server .error-page-footer {
+	color: #6e392b;
+}
+.error-page-server .recovery-primary {
+	border-color: #843923;
+	background: #843923;
+}
+.error-page-server .recovery-primary:hover {
+	background: #692a18;
+}
+.booking-recovery {
+	color: #28231f;
+	background:
+		radial-gradient(ellipse at 50% 30%, #ede0cd80, transparent 65%), #f8f5ef;
+}
+.booking-recovery-card {
+	max-width: 720px;
+	margin: clamp(30px, 7vh, 80px) auto 36px;
+	padding: clamp(24px, 5vw, 56px);
+	border: 1px solid #e6dfd5;
+	border-radius: 18px;
+	background: #fffdfa;
+	box-shadow: 0 16px 60px #4d34200a;
+	text-align: center;
+}
+.booking-recovery-icon {
+	display: grid;
+	place-items: center;
+	width: 76px;
+	height: 76px;
+	margin: 0 auto 26px;
+	border: 1px solid #e5d5bf;
+	border-radius: 50%;
+	background: #f6eee3;
+	color: #a46a34;
+}
+.booking-recovery .recovery-description {
+	margin-inline: auto;
+	color: #746b63;
+}
+.booking-recovery .recovery-actions {
+	justify-content: center;
+}
+.booking-recovery-movie {
+	display: grid;
+	gap: 6px;
+	margin: 24px 0 0;
+	font-size: 12px;
+	color: #746b63;
+}
+.booking-recovery-movie strong {
+	color: #342b24;
+	font-size: 16px;
+}
+.booking-recovery-steps {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 12px;
+	margin: 32px 0 0;
+	padding: 26px 0;
+	border-block: 1px solid #eee7dd;
+	list-style: none;
+}
+.booking-recovery-steps li {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	font-size: 11px;
+	line-height: 1.5;
+	color: #81766b;
+}
+.booking-recovery-steps li > span {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	border: 1px solid #e4dcd2;
+	border-radius: 50%;
+	font-size: 11px;
+}
+.booking-recovery-steps .active {
+	color: #895426;
+	font-weight: 700;
+}
+.booking-recovery-steps .active > span {
+	color: white;
+	border-color: #a46a34;
+	background: #a46a34;
+}
+.booking-recovery-steps .complete > span {
+	color: #447650;
+	background: #edf4ec;
+	border-color: #d3e3d1;
+}
+@media (max-width: 700px) {
+	.error-page-server {
+		background-image:
+			linear-gradient(#ffc1b0ed, #ffc1b0e0), url("/images/maintenance.png");
+	}
+	.error-page-server .error-page-content {
+		width: 100%;
+	}
+	.booking-recovery-steps {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 20px;
+	}
+	.recovery-actions {
+		align-items: stretch;
+		flex-direction: column;
+		gap: 8px;
+	}
+}

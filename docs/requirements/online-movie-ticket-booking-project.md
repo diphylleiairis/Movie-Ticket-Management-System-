@@ -25,7 +25,7 @@
 | Seat Hold | Temporary reservation of selected seats for up to 10 minutes while payment is completed. |
 | Booking | A customer's purchase process for selected seats. |
 | Payment Attempt | One attempt to pay for a Booking. A Booking may have multiple attempts, but only one active attempt at a time. |
-| Ticket | Confirmed proof of purchase containing booking details and a QR code. |
+| Ticket | Confirmed proof of purchase for one Booking, with one QR covering all purchased seats and supporting groups arriving separately. |
 | Customer | Registered user who browses movies and purchases tickets. |
 | Admin | User who manages movies, venues, halls, and showtimes. |
 | Cinema Staff | Authorized staff member who validates tickets at the cinema entrance. |
@@ -84,6 +84,8 @@ HELD (10 minutes)
 
 ### Payment
 - Actual payment is processed through an external Payment Provider.
+- SePay handles bank transfers; PayPal Sandbox handles Visa/Mastercard card testing. Fake provider tests and external test/live environments remain separate.
+- If payment uses a different currency from the Booking, the backend records the expected provider amount/currency and an immutable conversion quote per Payment Attempt, then validates the provider result against that quote.
 - The application manages booking/payment workflow and does not act as the bank/card network.
 - A Booking may have multiple Payment Attempts, but only one active attempt at a time.
 - Retry is allowed after FAILED while the seat hold remains active.
@@ -102,6 +104,7 @@ HELD (10 minutes)
 ### Tickets
 - Successful payment generates a Ticket.
 - Ticket contains Movie, Cinema, Showtime, Seats, Customer Name, Booking ID, QR Code, Price.
+- Each confirmed Booking has exactly one Ticket/QR for all purchased seats. Staff confirms the actual admitted count for each group; the same QR remains usable until all purchased admissions are consumed.
 - Customers cannot cancel successfully purchased tickets.
 - Upcoming tickets remain visible regardless of purchase age.
 - Past booking history is visible for the previous 30 days.
@@ -196,6 +199,7 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given configured Vietnam Locations/Cinemas/Halls exist, when Admin opens venue management, then those entities are available.
 - Given a Cinema belongs to a Location, when that Location is selected, then only its Cinemas are available.
 - Given a Hall belongs to a Cinema, when that Cinema is selected, then only its Halls are available.
+- Given Admin creates or updates a Cinema, then Admin supplies nonnegative check-in opening minutes before Showtime start and closing minutes after Showtime start for that Cinema; missing or negative values are rejected.
 
 ### VEN-02 — Assign Seat Layout
 - Given predefined layouts exist, when Admin configures a Hall, then a layout can be assigned.
@@ -241,6 +245,8 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given a Booking already has an active Payment Attempt, when Pay is clicked again, then no second active attempt is created.
 - Given an active attempt fails while the hold remains active, when the customer retries, then the failed attempt becomes inactive and a new active attempt is created.
 - Given a new Payment Attempt is created, when it is sent to the provider, then it remains associated with the same Booking.
+- Given bank transfer is selected, then the configured SePay environment is used; given Visa/Mastercard testing is selected, then PayPal Sandbox is used.
+- Given provider currency differs from Booking currency, then the provider amount, currency and conversion quote are stored when creating the attempt and remain unchanged on repeated Pay requests. Callbacks are checked against the stored provider values.
 
 ### PAY-02 — Payment outcomes/reconciliation
 - Given payment returns SUCCESS before hold expiry, when the result is verified, then Booking becomes CONFIRMED, seats become BOOKED, and a Ticket is generated.
@@ -252,6 +258,7 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 
 ### TCK-01 — Generate/display Ticket
 - Given payment is confirmed successful, when the Booking becomes CONFIRMED, then a Ticket is generated.
+- Given a confirmed Booking has multiple seats, then exactly one Ticket/QR covers all of those seats, with its admitted count initially zero.
 - Given a Ticket exists, when the customer opens it, then Movie, Cinema, Showtime, Seats, Customer Name, Booking ID, QR Code, and Price are shown.
 - Given a confirmed Ticket exists, when the customer attempts cancellation, then cancellation is rejected.
 - Given payment did not complete successfully, then no confirmed Ticket is issued.
@@ -263,10 +270,21 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given a Ticket references an archived Movie, when opened, then historical Movie information remains accessible.
 
 ### TCK-03 — Ticket validation
-- Given Cinema Staff is authenticated and scans a valid unused QR code for the current showtime, when validation is performed, then the system reports the Ticket as valid.
+- Given Cinema Staff is authenticated and scans a valid QR for the current showtime with remaining admissions, then the system displays the purchased-seat count, cumulative admitted count, and remaining admissions.
+- Given staff confirms a positive integer group count no greater than remaining admissions, then the count is added atomically and the accepted check-in is recorded with staff and time.
+- Given a Booking has five purchased seats and three people have checked in, when two people arrive later with the same QR, then they can check in and the Ticket becomes fully used.
+- Given a Ticket has remaining admissions and has been partially used, then its QR remains usable for later groups at the valid showtime.
+- Given the cumulative admitted count equals the purchased-seat count, then the Ticket is marked USED and its QR is locked.
+- Given the requested count exceeds remaining admissions or is not a positive integer, then the check-in is rejected without consuming admissions. Staff can confirm a smaller group within the allowance; excess people are refused entry.
 - Given the QR code is invalid or unknown, when scanned, then the system rejects it.
-- Given the Ticket has already been validated, when scanned again, then the system reports it as already used.
+- Given the Ticket is fully used, when scanned again, then the system reports it as already used and admits no more people.
 - Given the Ticket belongs to another showtime, when scanned for the current showtime, then the system rejects it.
+- Given concurrent check-ins use the same QR, then their cumulative admitted count cannot exceed purchased seats.
+- Given an accepted check-in request is retried with the same request ID and payload, then the original result is returned without consuming admissions again. A new group uses a new request ID with the same QR.
+- Given a request ID is reused with different data, then it is rejected without changing the admitted count.
+- Given the current server time is inside the Cinema's configured window relative to Showtime start, including its boundaries, then valid group check-in may proceed.
+- Given current server time is before opening or after closing, then check-in is rejected and no admissions are consumed, including for a group arriving after an earlier partial check-in.
+- Given two Cinemas have different check-in settings, then each Ticket uses the settings of its own Cinema.
 
 ## 7. Non-Functional Requirements
 
@@ -335,9 +353,10 @@ These are candidate E2E/functional scenarios, not separate product stories:
 23. Payment remains PENDING until timeout.
 24. Payment SUCCESS arrives after hold expiry.
 25. Customer reopens upcoming Ticket.
-26. Cinema Staff validates a valid QR code.
-27. Cinema Staff scans an already-used QR code.
+26. Cinema Staff checks in a partial group, then later arrivals use the same QR until all admissions are consumed.
+27. Cinema Staff scans a fully used QR code or requests more admissions than remain.
 28. Cinema Staff scans a ticket for the wrong showtime.
+29. Concurrent check-ins and retries of the same request cannot exceed or double-count purchased admissions.
 
 ## 10. Key Risks / Open Decisions
 

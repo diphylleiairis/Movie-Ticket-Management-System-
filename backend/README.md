@@ -14,3 +14,37 @@ $env:SPRING_PROFILES_ACTIVE = 'dev'
 The Spring Boot 4 dotenv integration reads the ignored `.env` in the repository root. Operating-system environment variables override local `.env` entries.
 
 Run the current backend smoke test from this directory with `.\mvnw.cmd test` in PowerShell after selecting Java 21. The `test` profile reads `TEST_DB_URL`, `TEST_DB_USER`, and `TEST_DB_PASSWORD` from the root `.env` when present. For the current context-load test, it falls back to the existing `POSTGRES_*` connection if those test keys are absent; no manual database-variable assignment is needed. Configure a separate test database before adding tests that change data.
+
+## Docker Desktop
+
+Start Docker Desktop with Linux containers. From the repository root, create the
+ignored `.env` using `.env.example` and fill in `POSTGRES_HOST`, `POSTGRES_PORT`,
+`POSTGRES`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. Compose passes only these
+database values to the container; the file is not copied into the image.
+For a database running on Windows itself, use `host.docker.internal` as the host.
+The current configuration requires PostgreSQL SSL, including in development.
+
+```powershell
+docker compose up -d --build backend
+docker compose ps
+docker compose logs --tail 80 backend
+```
+
+Open `http://localhost:8080/login`. The backend currently has Spring Security's
+default login page and no business API controllers. Seeing this page verifies
+HTTP startup, not the customer login workflow. Do not use the generated development
+account as a provisioned Customer, Admin, or Cinema Staff account.
+
+If port 8080 is occupied, set `$env:BACKEND_PORT = '8081'` before starting Compose
+and open `http://localhost:8081/login` instead. Stop the local deployment with
+`docker compose down`.
+
+The multi-stage Dockerfile builds with Java 21 and runs as a non-root user. Image
+builds skip database-dependent tests; run those separately before release. Compose
+uses the `dev` profile for local HTTP. The image defaults to `prod`, which requires
+the same database variables, enables secure session cookies, and reads Render's
+`PORT` variable. For Render, use `backend` as the root directory and `./Dockerfile`
+as the Dockerfile path. Do not set `SERVER_PORT` there, so `PORT` takes effect.
+
+Both profiles disable Hibernate schema changes. Flyway is not yet wired into the
+application, so starting the container does not apply the SQL migration.
