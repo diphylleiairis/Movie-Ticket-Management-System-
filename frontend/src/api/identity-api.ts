@@ -74,7 +74,7 @@ export function verifyRegistrationCode(challengeId: string, code: string) {
 export const requestPasswordReset = (email: string) =>
 	postIdentity("password-reset", { email }, "REQUEST_ACCEPTED");
 
-export function startSocialAuth(provider: AuthProvider, intent: "login" | "register", returnTo: string) {
+export function startSocialAuth(provider: AuthProvider, intent: "login" | "register" | "link", returnTo: string) {
 	const url = configuredUrl(provider === "google" ? import.meta.env.VITE_GOOGLE_AUTH_URL : import.meta.env.VITE_APPLE_AUTH_URL);
 	if (!url) throw new Error(`${provider === "google" ? "Google" : "Apple ID"} sign-in is not available yet. Please use email or try again later.`);
 	url.searchParams.set("intent", intent);

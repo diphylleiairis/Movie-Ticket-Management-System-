@@ -5,6 +5,14 @@
 			"destination": "https://movie-ticket-backend-mclp.onrender.com/api/:path*"
 		},
 		{
+			"source": "/oauth2/:path*",
+			"destination": "https://movie-ticket-backend-mclp.onrender.com/oauth2/:path*"
+		},
+		{
+			"source": "/login/oauth2/code/:path*",
+			"destination": "https://movie-ticket-backend-mclp.onrender.com/login/oauth2/code/:path*"
+		},
+		{
 			"source": "/(.*)",
 			"destination": "/index.html"
 		}

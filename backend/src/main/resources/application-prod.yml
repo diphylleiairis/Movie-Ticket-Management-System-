@@ -20,3 +20,18 @@ spring:
     properties:
       hibernate:
         default_schema: movie_app
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+identity:
+  frontend-url: ${FRONTEND_URL:https://movie-ticket-management-system-azure.vercel.app}

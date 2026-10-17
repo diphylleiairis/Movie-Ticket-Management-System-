@@ -47,3 +47,7 @@ _Avoid_: scan alone, full-ticket consumption
 **Remaining admissions**:
 The number of purchased seats on a confirmed Booking minus the cumulative number of people admitted using its Ticket.
 _Avoid_: available seats, remaining seat holds
+
+**Provider identity**:
+A link between an application account and its identity at an external sign-in provider, allowing later sign-ins to recover the same Customer.
+_Avoid_: separate social Customer, email-only account merge

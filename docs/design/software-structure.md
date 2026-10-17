@@ -130,7 +130,9 @@ Tickets owns the cumulative admitted count and enforces atomic, idempotent consu
 
 Check-in opening and closing offsets belong to each Cinema and are entered by Admin; both are relative to Showtime start. Ticket Validation obtains those settings through the Venue application contract and enforces them using server time. The SQL check-in function also enforces the same time window at the persistence boundary.
 
-Browser authentication continues to use HTTP-only secure session cookies as approved in ADR 0002. The current database design excludes PostgreSQL session tables; the backend session-storage mechanism remains an implementation decision. Login session lifetime and Booking seat-hold expiration are separate concerns.
+Browser authentication continues to use HTTP-only secure session cookies as approved in ADR 0002. The current database design excludes PostgreSQL session tables; the current backend stores sessions in its application instance. Login session lifetime and Booking seat-hold expiration are separate concerns.
+
+Identity currently persists accounts, provider links, verification challenges and reset tokens through JDBC inside its own module. Application services own transaction boundaries; all other modules obtain identity through public application contracts. Security configuration and Google adapters live in Identity infrastructure. Sessions are held in the backend instance; restart/redeploy requires sign-in again. Vercel and local Vite proxy REST and OAuth routes through the frontend origin. See [Identity setup](identity.md) and [ADR 0006](../adr/0006-google-verified-customer-identity.md).
 
 ## Runtime environments
 

@@ -158,6 +158,7 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given email registration succeeds, the system sends a six-digit numeric code and displays six input boxes; the account becomes active only after successful server verification.
 - Given a code is invalid or expired, verification is rejected; the customer can request a new code and try again.
 - Given Google or Apple ID registration is configured, the customer may use that provider; account activation and role provisioning follow the Identity rules in `AGENTS.md`.
+- Given a server-validated Google identity has `email_verified=true`, registration creates an active Customer without a six-digit code. A false/missing claim rejects Google activation. Existing accounts require authenticated explicit linking; an email match alone does not link accounts.
 
 ### ID-02 — Login and logout
 - Given a registered user enters valid credentials, when login is submitted, then an authenticated session is created.

@@ -21,6 +21,16 @@ import VerificationCodeInput from "./verification-code-input";
 
 type AuthMode = "login" | "register" | "forgot-password";
 
+const googleErrors: Record<string, string> = {
+	ACCOUNT_LINK_REQUIRED: "This email already has an account. Sign in with your password to link Google.",
+	GOOGLE_EMAIL_NOT_VERIFIED: "Google has not verified your email. Register using email and password instead.",
+	ACCOUNT_UNAVAILABLE: "This account cannot sign in using Google.",
+	GOOGLE_EMAIL_MISMATCH: "Choose a Google account with your current verified email.",
+	GOOGLE_ALREADY_LINKED: "This Google account is already linked.",
+	LINK_REQUIRES_LOGIN: "Sign in with your existing account before linking Google.",
+	GOOGLE_LOGIN_FAILED: "Google sign-in could not be completed. Please try again.",
+};
+
 function ProviderIcon({ provider }: { provider: AuthProvider }) {
 	return provider === "google" ? (
 		<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -146,7 +156,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 	const [confirmation, setConfirmation] = useState("");
 	const [rememberMe, setRememberMe] = useState(false);
 	const [acceptedTerms, setAcceptedTerms] = useState(false);
-	const [error, setError] = useState("");
+	const [error, setError] = useState(() => {
+		const code = searchParams.get("oauthError");
+		return code ? googleErrors[code] ?? googleErrors.GOOGLE_LOGIN_FAILED : "";
+	});
 	const [completed, setCompleted] = useState(false);
 	const [challengeId, setChallengeId] = useState<string | null>(null);
 	const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(""));
@@ -206,6 +219,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 				await signIn(email.trim(), password, rememberMe);
 				if (!active.current) return;
 				setPassword("");
+				if (searchParams.get("oauthError") === "ACCOUNT_LINK_REQUIRED") {
+					startSocialAuth("google", "link", returnTo);
+					return;
+				}
 				navigate(returnTo, { replace: true });
 			}
 		} catch (failure) {
@@ -609,7 +626,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 										? "SEND VERIFICATION CODE"
 										: resetting
 											? "SEND RESET LINK"
-											: "SIGN IN"}
+											: searchParams.get("oauthError") === "ACCOUNT_LINK_REQUIRED"
+												? "SIGN IN AND LINK GOOGLE"
+												: "SIGN IN"}
 								<ArrowRight size={16} aria-hidden="true" />
 							</button>
 						</fieldset>

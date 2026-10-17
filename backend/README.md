@@ -30,10 +30,10 @@ docker compose ps
 docker compose logs --tail 80 backend
 ```
 
-Open `http://localhost:8080/login`. The backend currently has Spring Security's
-default login page and no business API controllers. Seeing this page verifies
-HTTP startup, not the customer login workflow. Do not use the generated development
-account as a provisioned Customer, Admin, or Cinema Staff account.
+Open `http://localhost:8080/api/v1/health` to verify HTTP startup. Identity now
+provides registration, email verification, login, logout and Google login; see
+[Identity setup](../docs/design/identity.md). `/login` is an entry point, not the
+JSON login API. Use provisioned accounts for Admin and Cinema Staff.
 
 If port 8080 is occupied, set `$env:BACKEND_PORT = '8081'` before starting Compose
 and open `http://localhost:8081/login` instead. Stop the local deployment with
