@@ -8,6 +8,8 @@ These pages are nested React Router routes under a shared `AuthLayout`. The layo
 
 Google and Apple authentication continue to redirect to the configured backend/provider flow because those flows leave the application.
 
+Apple ID is temporarily hidden on the login and registration forms. Google is the only visible social provider and its button spans the full form width; Apple configuration and redirect support are retained.
+
 Without configured Identity endpoints, submission and social sign-in display an unavailable-service message. They do not create accounts, activate emails, persist passwords, or simulate authenticated sessions.
 
 ## Configuration

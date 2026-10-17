@@ -71,6 +71,10 @@ tests/
 └── traceability/
 ```
 
+## Frontend styling
+
+The React frontend uses Tailwind CSS 4 with the `@tailwindcss/vite` plugin. Components declare presentation, responsive layouts, and interactive states with utility classes in TSX. `frontend/src/index.css` imports Tailwind's theme and utilities and retains only global browser defaults, accessibility rules, and shared animation keyframes. Preflight is omitted to preserve the existing browser defaults during the migration. Existing semantic class names remain as state and TestCafe selector hooks.
+
 ## Frontend routing
 
 React Router provides browser routing. `frontend/src/routes/app-routes.tsx` defines page routes, and `frontend/src/main.tsx` mounts them inside `BrowserRouter`. Identity owns a shared account layout with nested login, registration, and password-reset routes rendered through `<Outlet />`. Internal account links use React Router `Link` to preserve the layout during navigation. Deployment must serve the frontend entry document for direct browser requests to frontend page routes while keeping `/api/v1/` requests routed to the backend.

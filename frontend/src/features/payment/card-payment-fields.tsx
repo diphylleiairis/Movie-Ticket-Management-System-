@@ -7,15 +7,25 @@ export default function CardPaymentFields({
 }) {
 	return (
 		<fieldset
-			className="checkout-card-fields"
+			className="checkout-card-fields grid grid-cols-[repeat(2,_minmax(0,_1fr))] gap-[18px_16px] min-w-0 m-[22px_0_0] p-0
+				border-0"
 			onChange={(event) => onValidityChange(
 				Array.from(event.currentTarget.querySelectorAll("input")).every((input) => input.validity.valid),
 			)}
 		>
-			<legend className="checkout-visually-hidden">Card details</legend>
-			<div className="checkout-card-field checkout-card-number">
+			<legend className="checkout-visually-hidden absolute w-[1px] h-[1px] p-0 overflow-hidden [clip-path:inset(50%)]
+				whitespace-nowrap">Card details</legend>
+			<div className="checkout-card-field [&_label]:block [&_label]:mb-[9px] [&_label]:text-[#77716a] [&_label]:text-[11px]
+				[&_label]:font-semibold [&_input]:w-full [&_input]:min-h-[46px] [&_input]:p-[12px_14px]
+				[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[7px] [&_input]:bg-white [&_input]:text-[#34312e]
+				[&_input]:font-[inherit] [&_input]:text-[14px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+				[&_input]:leading-[inherit] [&_input:focus-visible]:[outline:2px_solid_#a46a34]
+				[&_input:focus-visible]:outline-offset-[3px] [&_input:user-invalid]:[border-color:#b74a32] min-w-0
+				checkout-card-number [grid-column:1_/_-1]">
 				<label htmlFor="checkout-card-number">CARD NUMBER</label>
-				<div className="checkout-card-input-wrap">
+				<div className="checkout-card-input-wrap relative [&_input]:pr-11 [&_>_svg]:absolute [&_>_svg]:top-[50%]
+					[&_>_svg]:right-[14px] [&_>_svg]:[transform:translateY(-50%)] [&_>_svg]:text-[#80796f]
+					[&_>_svg]:pointer-events-none">
 					<input
 						id="checkout-card-number"
 						type="text"
@@ -34,7 +44,12 @@ export default function CardPaymentFields({
 					<CreditCard size={19} aria-hidden="true" />
 				</div>
 			</div>
-			<div className="checkout-card-field">
+			<div className="checkout-card-field [&_label]:block [&_label]:mb-[9px] [&_label]:text-[#77716a] [&_label]:text-[11px]
+				[&_label]:font-semibold [&_input]:w-full [&_input]:min-h-[46px] [&_input]:p-[12px_14px]
+				[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[7px] [&_input]:bg-white [&_input]:text-[#34312e]
+				[&_input]:font-[inherit] [&_input]:text-[14px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+				[&_input]:leading-[inherit] [&_input:focus-visible]:[outline:2px_solid_#a46a34]
+				[&_input:focus-visible]:outline-offset-[3px] [&_input:user-invalid]:[border-color:#b74a32] min-w-0">
 				<label htmlFor="checkout-card-expiry">EXPIRATION DATE</label>
 				<input
 					id="checkout-card-expiry"
@@ -66,7 +81,12 @@ export default function CardPaymentFields({
 					}}
 				/>
 			</div>
-			<div className="checkout-card-field">
+			<div className="checkout-card-field [&_label]:block [&_label]:mb-[9px] [&_label]:text-[#77716a] [&_label]:text-[11px]
+				[&_label]:font-semibold [&_input]:w-full [&_input]:min-h-[46px] [&_input]:p-[12px_14px]
+				[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[7px] [&_input]:bg-white [&_input]:text-[#34312e]
+				[&_input]:font-[inherit] [&_input]:text-[14px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+				[&_input]:leading-[inherit] [&_input:focus-visible]:[outline:2px_solid_#a46a34]
+				[&_input:focus-visible]:outline-offset-[3px] [&_input:user-invalid]:[border-color:#b74a32] min-w-0">
 				<label htmlFor="checkout-card-security-code">SECURITY CODE</label>
 				<input
 					id="checkout-card-security-code"
@@ -83,7 +103,7 @@ export default function CardPaymentFields({
 					}}
 				/>
 			</div>
-			<p className="checkout-card-hint">Demo fields. Use test card details only.</p>
+			<p className="checkout-card-hint [grid-column:1_/_-1] m-[-6px_0_0] text-[#80796f] text-[12px] leading-[1.5]">Demo fields. Use test card details only.</p>
 		</fieldset>
 	);
 }

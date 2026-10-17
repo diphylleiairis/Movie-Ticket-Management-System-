@@ -69,9 +69,19 @@ function PasswordField({
 }) {
 	const [visible, setVisible] = useState(false);
 	return (
-		<div className="auth-field">
+		<div className="auth-field min-w-0 [&_>_label]:block [&_>_label]:mb-[7px] [&_>_label]:text-[#77716a] [&_>_label]:text-[10px]
+			[&_>_label]:font-semibold [&_input]:block [&_input]:w-full [&_input]:min-h-[42px] [&_input]:p-[11px_13px]
+			[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[6px] [&_input]:bg-white [&_input]:text-[#34312e]
+			[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+			[&_input]:leading-[inherit] [&_input::placeholder]:text-[#9b948b]
+			[&_input:focus-visible]:[outline:2px_solid_#a46a34] [&_input:focus-visible]:outline-offset-[2px]
+			[&_>_small]:block [&_>_small]:mt-2 [&_>_small]:text-[#80796f] [&_>_small]:text-[11px]
+			[&_>_small]:leading-[1.5]">
 			<label htmlFor={id}>{label}</label>
-			<div className="auth-password-wrap">
+			<div className="auth-password-wrap relative [&_input]:pr-[45px] [&_>_button]:absolute [&_>_button]:top-0
+				[&_>_button]:right-[6px] [&_>_button]:grid [&_>_button]:place-items-center [&_>_button]:w-[34px]
+				[&_>_button]:h-full [&_>_button]:p-0 [&_>_button]:border-0 [&_>_button]:rounded-[4px]
+				[&_>_button]:bg-transparent [&_>_button]:text-[#80796f] [&_>_button:hover]:text-[#34312e]">
 				<input
 					id={id}
 					name={id}
@@ -269,8 +279,11 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 	};
 
 	return (
-		<section className="auth-form-panel" aria-labelledby="auth-title">
-			<span className="auth-eyebrow">YOUR LUMIÈRE ACCOUNT</span>
+		<section className="auth-form-panel w-full max-w-[440px] py-[10px] [&_h1]:m-[0_0_12px]
+			[&_h1]:text-[clamp(29px,_3vw,_38px)] [&_h1]:font-normal [&_h1]:tracking-[-.025em] [&_h1]:leading-[1.15]
+			[@media(min-width:_851px)_and_(max-height:_800px)]:py-[0] max-[850px]:max-w-[none]
+			max-[600px]:[&_h1]:text-[30px]" aria-labelledby="auth-title">
+			<span className="auth-eyebrow block mb-3 text-[color:var(--auth-accent)] text-[10px] font-semibold">YOUR LUMIÈRE ACCOUNT</span>
 			<h1 id="auth-title">
 				{completed
 					? registration
@@ -285,17 +298,20 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 								: "Welcome back"}
 			</h1>
 			{registration && challengeId && !completed ? (
-				<div className="auth-verification-panel">
-					<p className="auth-intro">
+				<div className="auth-verification-panel [&_.auth-intro]:[overflow-wrap:anywhere] [&_.auth-submit:disabled]:cursor-not-allowed
+					[&_form[aria-busy=true]_.auth-submit:disabled]:cursor-wait">
+					<p className="auth-intro m-[0_0_20px] text-[#80796f] text-[14px] leading-[1.6]">
 						We sent a verification code to <strong>{email.trim()}</strong>.
 					</p>
 					{verificationNotice && (
-						<p className="auth-verification-notice" role="status">
+						<p className="auth-verification-notice m-0 p-[10px_12px] [border:1px_solid_#e3d7ba] rounded-[6px] bg-[#fffaf0]
+							text-[#825b13] text-[13px] leading-[1.6] [overflow-wrap:anywhere]" role="status">
 							{verificationNotice}
 						</p>
 					)}
 					{error && (
-						<p className="auth-error" role="alert">
+						<p className="auth-error m-[0_0_14px] p-[10px_12px] [border:1px_solid_#e4c9c3] rounded-[6px] bg-[#fff4f0] text-[#8a3529]
+							text-[13px] leading-[1.6]" role="alert">
 							{error}
 						</p>
 					)}
@@ -315,7 +331,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							}}
 						/>
 						<button
-							className="auth-submit"
+							className="auth-submit flex items-center justify-center gap-3 w-full min-h-[43px] p-[12px_16px] border-0 rounded-[6px]
+								bg-[var(--auth-gold)] text-[#171717] text-[12px] font-semibold no-underline
+								[&:hover:not(:disabled)]:bg-[#d9a326] disabled:cursor-wait disabled:opacity-[.65]"
 							type="submit"
 							disabled={
 								pending || !codeDigits.every((digit) => /^[0-9]$/.test(digit))
@@ -325,7 +343,11 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							<ArrowRight size={16} aria-hidden="true" />
 						</button>
 					</form>
-					<p className="auth-resend">
+					<p className="auth-resend m-[20px_0_0] text-[#80796f] text-[13px] leading-[1.6] text-center [&_button]:p-0
+						[&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[color:var(--auth-accent)]
+						[&_button]:font-[inherit] [&_button]:text-inherit [&_button]:[font-weight:inherit]
+						[&_button]:[font-style:inherit] [&_button]:leading-[inherit] [&_button]:underline
+						[&_button]:underline-offset-[3px] [&_button:disabled]:cursor-wait [&_button:disabled]:opacity-[.6]">
 						Didn’t receive a code?{" "}
 						<button
 							type="button"
@@ -337,12 +359,16 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							{verificationAction === "resend" ? "SENDING…" : "Resend code"}
 						</button>
 					</p>
-					<p className="auth-switch">
+					<p className="auth-switch [&_a]:text-[color:var(--auth-accent)] [&_a]:underline [&_a]:underline-offset-[2px]
+						[&_a:hover]:underline [&_a:hover]:underline-offset-[2px] m-[20px_0_0] text-[#80796f] text-[13px] text-center
+						leading-[1.5]">
 						<Link to={authPagePath("login", returnTo)}>Back to sign in</Link>
 					</p>
 				</div>
 			) : completed ? (
-				<div className="auth-completed" role="status">
+				<div className="auth-completed grid gap-[18px] pt-3 [&_>_svg]:text-[color:var(--auth-accent)] [&_p]:m-0 [&_p]:text-[#77716a]
+					[&_p]:text-[15px] [&_p]:leading-[1.7] [&_p]:[overflow-wrap:anywhere] [&_small]:flex [&_small]:items-center
+					[&_small]:gap-[7px] [&_small]:text-[#77716a] [&_small]:text-[12px] [&_small]:leading-[1.5]" role="status">
 					{registration ? (
 						<CheckCircle2 size={36} aria-hidden="true" />
 					) : (
@@ -353,7 +379,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							? `Your email ${email.trim()} has been verified. You can now sign in to your account.`
 							: "If an account uses this verified email, you’ll receive instructions to reset your password."}
 					</p>
-					<Link className="auth-submit" to={authPagePath("login", returnTo)}>
+					<Link className="auth-submit flex items-center justify-center gap-3 w-full min-h-[43px] p-[12px_16px] border-0 rounded-[6px]
+						bg-[var(--auth-gold)] text-[#171717] text-[12px] font-semibold no-underline
+						[&:hover:not(:disabled)]:bg-[#d9a326] disabled:cursor-wait disabled:opacity-[.65]" to={authPagePath("login", returnTo)}>
 						BACK TO SIGN IN <ArrowRight size={16} aria-hidden="true" />
 					</Link>
 					{registration && (
@@ -365,7 +393,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 				</div>
 			) : (
 				<>
-					<p className="auth-intro">
+					<p className="auth-intro m-[0_0_20px] text-[#80796f] text-[14px] leading-[1.6]">
 						{registration
 							? "Your next favorite film is just a screening away."
 							: resetting
@@ -375,7 +403,12 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 					{!resetting && (
 						<>
 							<div
-								className="auth-providers"
+								className="auth-providers grid grid-cols-1 gap-3 [&_button]:flex [&_button]:items-center
+									[&_button]:justify-center [&_button]:gap-[9px] [&_button]:min-h-[42px] [&_button]:p-[10px]
+									[&_button]:[border:1px_solid_#e5ded4] [&_button]:rounded-[6px] [&_button]:bg-white [&_button]:text-[#34312e]
+									[&_button]:text-[13px] [&_button:hover:not(:disabled)]:[border-color:#bda36b]
+									[&_button:hover:not(:disabled)]:bg-[#fffcf4] [&_svg]:flex-none [&_button:disabled]:cursor-wait
+									[&_button:disabled]:opacity-[.65]"
 								aria-label={
 									registration
 										? "Register with a provider"
@@ -394,20 +427,30 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									</button>
 								))}
 							</div>
-							<div className="auth-divider">
+							<div className="auth-divider flex items-center gap-3 m-[16px_0] text-[#80796f] text-[11px] before:content-['']
+								before:flex-1 before:[border-top:1px_solid_#e5ded4] after:content-[''] after:flex-1
+								after:[border-top:1px_solid_#e5ded4]">
 								<span>or continue with email</span>
 							</div>
 						</>
 					)}
 					{error && (
-						<p className="auth-error" role="alert">
+						<p className="auth-error m-[0_0_14px] p-[10px_12px] [border:1px_solid_#e4c9c3] rounded-[6px] bg-[#fff4f0] text-[#8a3529]
+							text-[13px] leading-[1.6]" role="alert">
 							{error}
 						</p>
 					)}
 					<form onSubmit={submit} aria-busy={pending}>
-						<fieldset className="auth-form-fields" disabled={pending}>
+						<fieldset className="auth-form-fields grid gap-4 min-w-0 m-0 p-0 border-0" disabled={pending}>
 							{registration && (
-								<div className="auth-field">
+								<div className="auth-field min-w-0 [&_>_label]:block [&_>_label]:mb-[7px] [&_>_label]:text-[#77716a] [&_>_label]:text-[10px]
+									[&_>_label]:font-semibold [&_input]:block [&_input]:w-full [&_input]:min-h-[42px] [&_input]:p-[11px_13px]
+									[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[6px] [&_input]:bg-white [&_input]:text-[#34312e]
+									[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+									[&_input]:leading-[inherit] [&_input::placeholder]:text-[#9b948b]
+									[&_input:focus-visible]:[outline:2px_solid_#a46a34] [&_input:focus-visible]:outline-offset-[2px]
+									[&_>_small]:block [&_>_small]:mt-2 [&_>_small]:text-[#80796f] [&_>_small]:text-[11px]
+									[&_>_small]:leading-[1.5]">
 									<label htmlFor="full-name">FULL NAME</label>
 									<input
 										id="full-name"
@@ -421,7 +464,14 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									/>
 								</div>
 							)}
-							<div className="auth-field">
+							<div className="auth-field min-w-0 [&_>_label]:block [&_>_label]:mb-[7px] [&_>_label]:text-[#77716a] [&_>_label]:text-[10px]
+								[&_>_label]:font-semibold [&_input]:block [&_input]:w-full [&_input]:min-h-[42px] [&_input]:p-[11px_13px]
+								[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[6px] [&_input]:bg-white [&_input]:text-[#34312e]
+								[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:[font-weight:inherit] [&_input]:[font-style:inherit]
+								[&_input]:leading-[inherit] [&_input::placeholder]:text-[#9b948b]
+								[&_input:focus-visible]:[outline:2px_solid_#a46a34] [&_input:focus-visible]:outline-offset-[2px]
+								[&_>_small]:block [&_>_small]:mt-2 [&_>_small]:text-[#80796f] [&_>_small]:text-[11px]
+								[&_>_small]:leading-[1.5]">
 								<label htmlFor="auth-email">EMAIL ADDRESS</label>
 								<input
 									id="auth-email"
@@ -454,7 +504,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 								/>
 							)}
 							{registration ? (
-								<label className="auth-terms">
+								<label className="auth-terms flex items-start gap-2 text-[#80796f] text-[12px] leading-[1.6] [&_button]:inline [&_button]:p-0
+									[&_button]:border-0 [&_button]:bg-none [&_button]:text-[#605746] [&_button]:text-inherit
+									[&_button]:underline [&_button]:underline-offset-[2px]">
 									<input
 										type="checkbox"
 										required
@@ -481,7 +533,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 								</label>
 							) : (
 								!resetting && (
-									<div className="auth-login-options">
+									<div className="auth-login-options flex justify-between items-center gap-3 text-[12px] [&_>_label]:flex
+										[&_>_label]:items-start [&_>_label]:gap-2 [&_>_label]:text-[#80796f] [&_>_label]:text-[12px]
+										[&_>_label]:leading-[1.6] [&_a]:text-[color:var(--auth-accent)] [&_a]:no-underline [&_a:hover]:underline
+										[&_a:hover]:underline-offset-[2px]">
 										<label>
 											<input
 												type="checkbox"
@@ -498,7 +553,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									</div>
 								)
 							)}
-							<button className="auth-submit" type="submit" disabled={pending}>
+							<button className="auth-submit flex items-center justify-center gap-3 w-full min-h-[43px] p-[12px_16px] border-0 rounded-[6px]
+								bg-[var(--auth-gold)] text-[#171717] text-[12px] font-semibold no-underline
+								[&:hover:not(:disabled)]:bg-[#d9a326] disabled:cursor-wait disabled:opacity-[.65]" type="submit" disabled={pending}>
 								{pending
 									? "PLEASE WAIT…"
 									: registration
@@ -510,7 +567,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							</button>
 						</fieldset>
 					</form>
-					<p className="auth-switch">
+					<p className="auth-switch [&_a]:text-[color:var(--auth-accent)] [&_a]:underline [&_a]:underline-offset-[2px]
+						[&_a:hover]:underline [&_a:hover]:underline-offset-[2px] m-[20px_0_0] text-[#80796f] text-[13px] text-center
+						leading-[1.5]">
 						{registration ? (
 							<>
 								Already have an account?{" "}
