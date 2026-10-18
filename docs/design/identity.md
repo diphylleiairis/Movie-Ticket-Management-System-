@@ -161,6 +161,11 @@ From the repository root, run browser acceptance tests:
 node tests/test-data/run-identity-e2e.mjs
 ```
 
+The equivalent npm command is `npm.cmd run test:e2e:identity`. The runner creates
+a unique temporary root before importing TestCafe to avoid reusing a profile
+still held by an earlier Chrome process. To check browser startup independently
+of Identity/database setup, run `npm.cmd run test:e2e:browser`.
+
 The runner requires that named test container and the packaged JAR. It creates a
 separate `identity_browser_tests` database/schema in that container if absent, so
 backend integration resets cannot affect browser tests. It starts

@@ -2,8 +2,11 @@ import { spawn, execFileSync } from 'node:child_process';
 import { mkdir, open, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import createTestCafe from 'testcafe';
 import { startIdentityFixture } from './identity-provider-fixture.mjs';
+import { prepareTestCafeRuntime } from './testcafe-runtime.mjs';
+
+await prepareTestCafeRuntime();
+const { default: createTestCafe } = await import('testcafe');
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const output = join(root, 'artifacts', 'identity-e2e');
@@ -64,7 +67,7 @@ try {
   await ready('http://127.0.0.1:15173/', frontend);
   console.log('Frontend is ready. Starting TestCafe...');
   cafe = await createTestCafe('127.0.0.1', 19095, 19096);
-  console.log('TestCafe is ready. Connecting headless browser...');
+  console.log('TestCafe is ready. Connecting browser...');
   const failures = await cafe.createRunner().src(join(root, 'tests/e2e/testcafe/identity.test.js'))
     .browsers(process.env.IDENTITY_TEST_BROWSER || 'chrome:headless').reporter('spec')
     .screenshots({ path: output, takeOnFails: true }).run({ disableNativeAutomation: true, browserInitTimeout: 30000 });

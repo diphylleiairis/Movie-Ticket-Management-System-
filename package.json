@@ -8,7 +8,10 @@
   "scripts": {
     "postinstall": "node scripts/install-backend.mjs",
     "build:frontend": "npm run build --workspace frontend",
-    "lint:frontend": "npm run lint --workspace frontend"
+    "lint:frontend": "npm run lint --workspace frontend",
+    "test:e2e:browser": "node tests/test-data/check-testcafe-browser.mjs",
+    "test:e2e:identity": "node tests/test-data/run-identity-e2e.mjs",
+    "test:e2e:pages": "node tests/test-data/run-page-recovery-e2e.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.49.0"

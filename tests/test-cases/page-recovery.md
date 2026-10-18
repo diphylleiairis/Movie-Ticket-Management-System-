@@ -2,6 +2,9 @@
 
 Requirements: customer booking flow, BKG-01, BKG-02, PAY-01; requested 4xx/5xx presentation.
 Preconditions: frontend running with bundled demo catalog; no backend or payment credentials required.
+The browser fixture mocks only `GET /api/v1/identity/me` as an unauthenticated
+401 response. Page rendering, navigation, images and recovery assertions use the
+real frontend; authenticated session behavior is tested in the Identity suite.
 
 | ID | Steps / input | Expected result |
 |---|---|---|
@@ -14,5 +17,7 @@ Preconditions: frontend running with bundled demo catalog; no backend or payment
 | UI-NAV-01 | Open booking recovery at 375px width | Content fits; required-step action remains accessible |
 
 Automation: `tests/e2e/testcafe/page-recovery.test.js`.
-Run against a local frontend: `npx testcafe chrome:headless tests/e2e/testcafe/page-recovery.test.js`.
-Set `FRONTEND_URL` to override the default `http://127.0.0.1:5173`.
+Run `npm.cmd run test:e2e:pages` from the repository root. The runner starts and
+stops an isolated local Vite server automatically and supplies its URL to the tests.
+For an already running frontend, use `node tests/test-data/run-testcafe.mjs chrome:headless tests/e2e/testcafe/page-recovery.test.js --hostname 127.0.0.1 --disable-native-automation`.
+Only that manual mode uses `FRONTEND_URL` to override the default `http://127.0.0.1:5173`.

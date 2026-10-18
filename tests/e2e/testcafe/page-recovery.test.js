@@ -1,11 +1,16 @@
-import { ClientFunction, Selector } from 'testcafe';
+import { ClientFunction, RequestMock, Selector } from 'testcafe';
 
 const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5173';
 const primary = Selector('.recovery-primary');
 const pageUrl = ClientFunction(() => window.location.href);
 const background = ClientFunction(() => getComputedStyle(document.querySelector('.error-page')).backgroundImage);
+// This UI-only suite has no backend: the account header sees an anonymous visitor.
+// Real session behavior is exercised separately by identity.test.js.
+const anonymousSession = RequestMock()
+    .onRequestTo({ url: /\/api\/v1\/identity\/me(?:\?.*)?$/, method: 'get' })
+    .respond({ code: 'UNAUTHENTICATED', message: 'Sign in to continue.' }, 401, { 'content-type': 'application/json' });
 
-fixture('Frontend error pages and booking recovery').page(baseUrl);
+fixture('Frontend error pages and booking recovery').page(baseUrl).requestHooks(anonymousSession);
 
 test('Unknown URL displays 404 with the cinema background and a working recovery link', async t => {
     await t.navigateTo(`${baseUrl}/unknown-page`)
