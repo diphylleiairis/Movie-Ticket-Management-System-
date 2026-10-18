@@ -134,6 +134,12 @@ Browser authentication continues to use HTTP-only secure session cookies as appr
 
 Identity currently persists accounts, provider links, verification challenges and reset tokens through JDBC inside its own module. Application services own transaction boundaries; all other modules obtain identity through public application contracts. Security configuration and Google adapters live in Identity infrastructure. Sessions are held in the backend instance; restart/redeploy requires sign-in again. Vercel and local Vite proxy REST and OAuth routes through the frontend origin. See [Identity setup](identity.md) and [ADR 0006](../adr/0006-google-verified-customer-identity.md).
 
+Identity owns an `IdentityMail` application contract with a default Resend HTTPS
+adapter and an explicitly configured SMTP alternative. Credentials and sender
+configuration stay in the backend. The frontend defaults to the same-origin
+Identity API, restores account display from the server session and signs out
+through the CSRF-protected backend endpoint.
+
 ## Runtime environments
 
 Development, testing, and production use separate configuration profiles. Secrets and provider credentials are supplied through environment variables and are never committed.

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Check, ChevronDown, CircleUserRound, MapPin } from "lucide-react";
-import { authPagePath } from "./features/identity/auth-navigation";
+import { ArrowRight, Check, ChevronDown, MapPin } from "lucide-react";
+import AccountMenu from "./features/identity/account-menu";
 
 const locations = [
 	"Quận 1, TP. Hồ Chí Minh",
@@ -17,7 +16,6 @@ type SiteHeaderProps = {
 };
 
 export default function SiteHeader({ currentStep, scrolled, showtimeHref, seatSelectionHref }: SiteHeaderProps) {
-	const currentLocation = useLocation();
 	const [location, setLocation] = useState(locations[0]);
 	const [locationOpen, setLocationOpen] = useState(false);
 
@@ -57,18 +55,17 @@ export default function SiteHeader({ currentStep, scrolled, showtimeHref, seatSe
 			</nav>
 			<div className="header-actions flex items-center gap-5 flex-none max-[600px]:gap-3">
 				<div className="location-wrap relative">
-					<button className="location-button flex items-center gap-2 p-[7px_0] bg-none border-0 text-[11px] whitespace-nowrap
+					<button className="location-button flex items-center gap-2 p-[7px_0] bg-transparent border-0 text-[11px] whitespace-nowrap
 						[&_svg]:flex-none max-[600px]:max-w-[125px] max-[600px]:overflow-hidden max-[600px]:text-ellipsis" type="button" aria-expanded={locationOpen} onClick={() => setLocationOpen(!locationOpen)}>
 						<MapPin size={17} aria-hidden="true" />{location}<ChevronDown size={13} aria-hidden="true" />
 					</button>
 					{locationOpen && <div className="location-menu absolute top-[calc(100%_+_12px)] right-0 min-w-[225px] p-[7px] [border:1px_solid_#e6dfd5]
 						rounded-[8px] bg-white shadow-[0_14px_30px_#0002] [&_button]:block [&_button]:w-full [&_button]:p-[9px]
-						[&_button]:border-0 [&_button]:bg-none [&_button]:text-left [&_button]:text-[12px]
+						[&_button]:border-0 [&_button]:bg-transparent [&_button]:text-left [&_button]:text-[12px]
 						[&_button:hover]:bg-[#f3efe8]">{locations.map((item) => <button key={item} type="button" onClick={() => { setLocation(item); setLocationOpen(false); }}>{item}</button>)}</div>}
 				</div>
 				<span className="divider h-[26px] [border-left:1px_solid_#e0d9cf] max-[600px]:hidden" />
-				<Link className="profile grid place-items-center w-8 h-8 border-0 rounded-[50%] text-[#e9dbcd] bg-[#151515] no-underline
-					max-[440px]:w-7 max-[440px]:h-7" to={authPagePath("login", currentLocation.pathname + currentLocation.search)} aria-label="Sign in to your account"><CircleUserRound size={18} aria-hidden="true" /></Link>
+				<AccountMenu />
 			</div>
 		</header>
 	);

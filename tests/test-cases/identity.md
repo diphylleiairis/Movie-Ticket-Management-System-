@@ -16,7 +16,9 @@
 | ID-T12 | ID-03 | Reset token is hashed, expires, is one-time and changes password; old sessions cease working | Integration |
 | ID-T13 | ID-01 | Mail failure rolls back pending account/challenge | Integration |
 | ID-T14 | ID-02 | External/encoded redirect destinations fall back to frontend home | Integration |
+| ID-T15 | ID-01/03 | Resend sends server-authenticated email; missing key/sender, provider rejection, malformed response and connection errors fail safely without leaking provider details | Resend adapter tests |
+| ID-T16 | ID-02 | Default same-origin frontend API signs in; header restores account after navigation and signs out using backend session/CSRF | TestCafe |
 
 Automated integration tests use only the dedicated loopback `identity_tests` database.
-Browser tests use deterministic local OIDC/SMTP fixtures; real Google consent and
+Browser tests use deterministic local OIDC/Resend fixtures; real Google consent and
 deployed proxy/cookie behavior still require a smoke check with configured test users.

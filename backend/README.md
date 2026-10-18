@@ -19,8 +19,10 @@ Run the current backend smoke test from this directory with `.\mvnw.cmd test` in
 
 Start Docker Desktop with Linux containers. From the repository root, create the
 ignored `.env` using `.env.example` and fill in `POSTGRES_HOST`, `POSTGRES_PORT`,
-`POSTGRES`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. Compose passes only these
-database values to the container; the file is not copied into the image.
+`POSTGRES`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. For email registration, also
+fill in `RESEND_API_KEY` and `IDENTITY_MAIL_FROM` with an authorized sender.
+Compose passes the database values and the Identity mail provider/key/sender to
+the container; the file is not copied into the image.
 For a database running on Windows itself, use `host.docker.internal` as the host.
 The current configuration requires PostgreSQL SSL, including in development.
 
@@ -45,6 +47,10 @@ uses the `dev` profile for local HTTP. The image defaults to `prod`, which requi
 the same database variables, enables secure session cookies, and reads Render's
 `PORT` variable. For Render, use `backend` as the root directory and `./Dockerfile`
 as the Dockerfile path. Do not set `SERVER_PORT` there, so `PORT` takes effect.
+Set `RESEND_API_KEY` and `IDENTITY_MAIL_FROM` in Render's environment as well;
+the ignored local `.env` is not uploaded by a Git-based deployment. The mail
+provider defaults to `resend`. See [Identity setup](../docs/design/identity.md)
+for the required frontend origin and Google settings in production.
 
 Both profiles disable Hibernate schema changes. Flyway is not yet wired into the
 application, so starting the container does not apply the SQL migration.

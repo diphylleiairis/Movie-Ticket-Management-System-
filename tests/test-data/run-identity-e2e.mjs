@@ -39,6 +39,8 @@ try {
   const backend = await launch(java, ['-Duser.timezone=UTC', '-jar', 'target/demo-0.0.1-SNAPSHOT.jar',
     '--spring.profiles.active=test', '--server.address=127.0.0.1', '--server.port=18080',
     '--identity.frontend-url=http://127.0.0.1:15173', '--identity.mail-from=cinema@example.test',
+    '--identity.mail-provider=resend', '--identity.resend-api-key=browser-resend-key',
+    '--identity.resend-api-url=http://127.0.0.1:19090',
     '--spring.mail.host=127.0.0.1', '--spring.mail.port=19025', '--spring.mail.properties.mail.smtp.auth=false',
     '--spring.mail.properties.mail.smtp.starttls.enable=false', '--spring.mail.properties.mail.smtp.starttls.required=false',
     '--spring.security.oauth2.client.registration.google.client-id=browser-client',
@@ -57,7 +59,7 @@ try {
   const vitePath = fileURLToPath(new URL('../../bin/vite.js', import.meta.resolve('vite')));
   const frontend = await launch(process.execPath, [vitePath, '--host', '127.0.0.1', '--port', '15173', '--strictPort'], {
     cwd: join(root, 'frontend'), env: { ...process.env, BACKEND_PROXY_URL: 'http://127.0.0.1:18080',
-      VITE_IDENTITY_API_URL: '/api/v1/identity', VITE_GOOGLE_AUTH_URL: '/oauth2/authorization/google' },
+      VITE_IDENTITY_API_URL: '', VITE_GOOGLE_AUTH_URL: '/oauth2/authorization/google' },
   }, 'frontend.log');
   await ready('http://127.0.0.1:15173/', frontend);
   console.log('Frontend is ready. Starting TestCafe...');

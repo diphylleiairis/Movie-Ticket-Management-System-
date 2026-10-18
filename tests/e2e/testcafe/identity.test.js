@@ -42,10 +42,12 @@ test('Email registration verifies code, logs in, survives reload and logs out', 
   await t.navigateTo(`${base}/movie-list`);
   const next = await sessionUser();
   await t.expect(next.body.user.id).eql(first.body.user.id);
-  const signedOut = await ClientFunction(() => fetch('/api/v1/identity/csrf').then(response => response.json())
-    .then(csrf => fetch('/api/v1/identity/logout', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf.token } }))
-    .then(response => response.status))();
-  await t.expect(signedOut).eql(200).expect((await sessionUser()).status).eql(401);
+  await t.navigateTo(`${base}/`);
+  await t.click(Selector('button[aria-label="Account: Browser Customer"]'))
+    .expect(Selector('.site-header').innerText).contains(email)
+    .click(Selector('button').withText('Sign out'))
+    .expect(Selector('a[aria-label="Sign in to your account"]').exists).ok();
+  await t.expect((await sessionUser()).status).eql(401);
 });
 
 test('Invalid credentials display an error without creating a session', async t => {

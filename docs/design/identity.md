@@ -61,21 +61,40 @@ Use `/api/v1/health` for Render health checks (HTTP startup only).
 
 Passwords use BCrypt, with at least eight characters including a number and at most
 72 UTF-8 bytes. Registration creates only a pending Customer and sends a six-digit
-code through SMTP. Code hashes are salted, expire after ten minutes and allow five
+code through Resend's HTTPS email API. Code hashes are salted, expire after ten minutes and allow five
 incorrect attempts. Resend waits sixty seconds and supersedes the previous challenge.
 Email delivery failure rolls back registration/challenge creation.
 
-Configure an available SMTP service on Render for email/password registration:
+Configure the backend locally in the ignored root `.env`, or in Render's environment:
 
 ```dotenv
-SPRING_MAIL_HOST=<SMTP host>
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=<SMTP username>
-SPRING_MAIL_PASSWORD=<SMTP password>
-IDENTITY_MAIL_FROM=<authorized sender email>
+RESEND_API_KEY=<Resend API key>
+IDENTITY_MAIL_FROM=The Lumiere <noreply@your-verified-domain.example>
+IDENTITY_MAIL_PROVIDER=resend
 ```
 
-STARTTLS is required. Google verified-email login works without SMTP. Never log
+Local Docker Compose forwards these three mail settings from the root `.env`
+to the backend container. For Render, set them in the service environment;
+the local ignored `.env` is not part of the Docker image or Git deployment.
+The frontend continues to call `/api/v1/identity` through the Vercel proxy,
+so the Resend key and sender do not need frontend build variables.
+
+`resend` is the default provider. The sender must belong to a verified Resend domain;
+`onboarding@resend.dev` can only send to the Resend account owner's email while testing.
+The API key alone does not configure a sender. No live email is sent by automated tests.
+See [Resend's send email contract](https://resend.com/docs/api-reference/emails/send-email).
+
+Identity sends verification and password-reset emails through its `IdentityMail`
+application contract. The Resend adapter has bounded connection/read timeouts,
+checks the returned email ID and converts provider/network errors into a sanitized
+`503 EMAIL_UNAVAILABLE`. Registration and resend transactions roll back if sending
+fails; resend does not invalidate the previous code when delivery fails.
+The adapter does not automatically retry ambiguous delivery failures.
+
+SMTP remains available for existing environments: explicitly set
+`IDENTITY_MAIL_PROVIDER=smtp`, `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`,
+`SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` and `IDENTITY_MAIL_FROM`.
+STARTTLS is required for SMTP. Google verified-email login works without email delivery. Never log
 codes/reset tokens or expose mail/provider credentials through `VITE_*` variables.
 
 ## REST contract
@@ -145,8 +164,16 @@ node tests/test-data/run-identity-e2e.mjs
 The runner requires that named test container and the packaged JAR. It creates a
 separate `identity_browser_tests` database/schema in that container if absent, so
 backend integration resets cannot affect browser tests. It starts
-the backend on 18080, Vite on 15173, fake OIDC on 19090 and fake SMTP on 19025, all
+the backend on 18080, Vite on 15173 and fake OIDC/Resend on 19090, all
 on loopback, then runs TestCafe in headless Chrome. Set `IDENTITY_TEST_BROWSER` to use
 another installed TestCafe browser. Test artifacts go to ignored `artifacts/identity-e2e`.
 It does not use live Google credentials or mail. Stop the test database when done
 with `docker stop movie-ticket-identity-tests`; retain it with `docker start` for later runs.
+
+`ResendIdentityMailTests` runs without a database using a loopback HTTP server.
+It covers mail content/authentication, missing configuration, rejected provider
+requests, invalid success responses, connection failures and provider selection:
+
+```powershell
+.\mvnw.cmd -B -ntp '-Dtest=ResendIdentityMailTests' test
+```

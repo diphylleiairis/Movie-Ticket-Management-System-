@@ -11,7 +11,7 @@ function configuredUrl(value: unknown) {
 	}
 }
 
-const apiBase = configuredUrl(import.meta.env.VITE_IDENTITY_API_URL);
+const apiBase = configuredUrl(import.meta.env.VITE_IDENTITY_API_URL || "/api/v1/identity");
 
 async function readJson(response: Response): Promise<Record<string, unknown>> {
 	if (!response.headers.get("content-type")?.includes("json")) throw new Error("The account service is unavailable. Please try again later.");
@@ -22,7 +22,7 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 	return body as Record<string, unknown>;
 }
 
-async function postIdentity(action: "login" | "register" | "password-reset" | "email-verification/confirm" | "email-verification/resend", payload: object, expectedStatus: string) {
+async function postIdentity(action: "login" | "logout" | "register" | "password-reset" | "email-verification/confirm" | "email-verification/resend", payload: object, expectedStatus: string) {
 	if (!apiBase) throw new Error("The account service is not available yet. Please try again later.");
 	const endpoint = apiBase.href.replace(/\/$/, "");
 	try {
@@ -36,6 +36,7 @@ async function postIdentity(action: "login" | "register" | "password-reset" | "e
 		});
 		const result = await readJson(response);
 		if (!response.ok) {
+			if (result.code === "EMAIL_UNAVAILABLE") throw new Error("The email could not be sent. Please try again later.");
 			if (result.code === "EMAIL_NOT_VERIFIED") throw new Error("Verify your email before signing in. Check your inbox for the verification code.");
 			if (result.code === "INVALID_VERIFICATION_CODE") throw new Error("The verification code is incorrect. Please check the six digits and try again.");
 			if (result.code === "EXPIRED_VERIFICATION_CODE") throw new Error("The verification code has expired. Request a new code to continue.");
@@ -54,6 +55,26 @@ async function postIdentity(action: "login" | "register" | "password-reset" | "e
 
 export const signIn = (email: string, password: string, rememberMe: boolean) =>
 	postIdentity("login", { email, password, rememberMe }, "AUTHENTICATED");
+
+export type SessionUser = { id: string; email: string; fullName: string; role: string };
+
+export async function currentUser(signal?: AbortSignal): Promise<SessionUser | null> {
+	if (!apiBase) throw new Error("The account service is unavailable.");
+	const response = await fetch(`${apiBase.href.replace(/\/$/, "")}/me`, {
+		credentials: "include", cache: "no-store", signal,
+	});
+	if (response.status === 401) return null;
+	const result = await readJson(response);
+	const user = result.user;
+	if (!response.ok || result.status !== "AUTHENTICATED" || !user || typeof user !== "object"
+		|| !("id" in user) || typeof user.id !== "string" || !("email" in user) || typeof user.email !== "string"
+		|| !("fullName" in user) || typeof user.fullName !== "string" || !("role" in user) || typeof user.role !== "string") {
+		throw new Error("The account service returned an unexpected response.");
+	}
+	return { id: user.id, email: user.email, fullName: user.fullName, role: user.role };
+}
+
+export const signOut = () => postIdentity("logout", {}, "SIGNED_OUT");
 
 function readVerificationChallenge(result: Record<string, unknown>) {
 	if (typeof result.challengeId !== "string" || !result.challengeId.trim()) throw new Error("The account service returned an unexpected response.");

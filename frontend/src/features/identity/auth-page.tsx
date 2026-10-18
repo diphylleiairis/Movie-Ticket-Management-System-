@@ -447,7 +447,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 					{!resetting && (
 						<>
 							<div
-								className="auth-providers grid grid-cols-[repeat(2,_minmax(0,_1fr))] gap-3 [&_button]:flex [&_button]:items-center
+								className="auth-providers grid grid-cols-1 gap-3 [&_button]:flex [&_button]:items-center
 									[&_button]:justify-center [&_button]:gap-[9px] [&_button]:min-h-[42px] [&_button]:p-[10px]
 									[&_button]:[border:1px_solid_#e5ded4] [&_button]:rounded-[6px] [&_button]:bg-white [&_button]:text-[#34312e]
 									[&_button]:text-[13px] [&_button:hover:not(:disabled)]:[border-color:#bda36b]

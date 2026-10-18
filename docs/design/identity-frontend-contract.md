@@ -1,6 +1,6 @@
 # Identity frontend integration
 
-Status: frontend implemented; backend contract proposed, not implemented.
+Status: frontend and backend implemented for email/password and Google authentication.
 
 The account pages are `/login`, `/register`, and `/forgot-password`. The header links to sign-in and carries a same-origin return path so the customer can return to their movie or checkout after successful authentication.
 
@@ -10,11 +10,15 @@ Google and Apple authentication continue to redirect to the configured backend/p
 
 Apple ID is temporarily hidden on the login and registration forms. Google is the only visible social provider and its button spans the full form width; Apple configuration and redirect support are retained.
 
-Without configured Identity endpoints, submission and social sign-in display an unavailable-service message. They do not create accounts, activate emails, persist passwords, or simulate authenticated sessions.
+Email authentication defaults to `/api/v1/identity` through the Vite/Vercel proxy.
+The header retrieves `/me` to display the signed-in Customer after navigation/reload
+and offers a CSRF-protected Sign out action. Sessions use backend HttpOnly cookies;
+the frontend never stores passwords or session tokens in local storage.
+Unconfigured social providers display an unavailable-service message.
 
 ## Configuration
 
-Copy `frontend/.env.example` to `frontend/.env.local` and supply public backend endpoints when the Identity module is ready. Restart Vite after changing configuration.
+Email authentication works through the default same-origin API path without a frontend env file. Copy `frontend/.env.example` to `frontend/.env.local` to override public endpoints or enable social providers. Restart Vite after changing configuration.
 
 | Variable | Expected value |
 |---|---|
@@ -24,7 +28,7 @@ Copy `frontend/.env.example` to `frontend/.env.local` and supply public backend 
 
 Deployed endpoints use HTTPS. HTTP endpoints on localhost are accepted for development. Provider secrets stay on the backend and must not use the `VITE_` prefix.
 
-## Proposed email API contract
+## Email API contract
 
 The frontend includes cookies on requests. It first fetches `GET /csrf`, expecting JSON `{ "token": "..." }`, and sends that value as `X-CSRF-TOKEN` on subsequent POST requests. The backend issues HTTP-only session cookies and enforces the existing email verification and authorization rules.
 
@@ -35,6 +39,7 @@ The frontend includes cookies on requests. It first fetches `GET /csrf`, expecti
 | `/email-verification/resend` | `challengeId` | `VERIFICATION_REQUIRED` |
 | `/email-verification/confirm` | `challengeId`, `code` (six numeric characters) | `EMAIL_VERIFIED` |
 | `/password-reset` | `email` | `REQUEST_ACCEPTED` |
+| `/logout` | none | `SIGNED_OUT` |
 
 Endpoint paths are relative to the configured API base. Responses must be JSON. Registration and resend responses must include a nonempty opaque `challengeId` identifying the server's pending registration verification. They send a six-digit code to the registration email. The frontend retains the challenge only in memory and clears passwords after registration succeeds.
 
@@ -42,13 +47,13 @@ Registration success opens six numeric input boxes with automatic focus advancem
 
 Error responses may include `code: "EMAIL_NOT_VERIFIED"`, `INVALID_VERIFICATION_CODE`, or `EXPIRED_VERIFICATION_CODE`; 401, 409, and 429 map to credential, duplicate-email, and retry-limit messages. The backend owns delivery, code expiration, request limits, challenge-to-account binding, and activation. Reset responses must avoid revealing whether an account exists.
 
-Registration UI validates email, nonblank name, password confirmation, acceptance of terms, and the reference design's password guidance (at least eight characters including a number). These rules also require backend validation when implementing this proposed contract. Login does not apply new-password rules to existing credentials. Legal-policy panels are placeholders until the project publishes its policies.
+Registration UI validates email, nonblank name, password confirmation, acceptance of terms, and password guidance (at least eight characters including a number). The backend validates these rules independently. Login does not apply new-password rules to existing credentials. Legal-policy panels are placeholders until the project publishes its policies.
 
 ## Social authentication
 
 The frontend redirects to the configured backend start URL with `intent=login` or `intent=register` and a `returnTo` path. For registration, the customer first checks the agreement box; the backend remains responsible for enforcing its registration policy.
 
-The backend must validate provider responses, state and nonce, permitted return paths, Customer-only public registration, email uniqueness, and the project email-verification rules. It must define verified identity linking without merging unrelated Customer identities or changing existing Booking/Ticket ownership. Provider callbacks and email verification delivery/validation remain unimplemented on the backend; the frontend never consumes provider tokens or assumes a provider button click has authenticated the customer.
+The backend validates Google provider responses, state and nonce, permitted return paths, Customer-only public registration, email uniqueness, and the project email-verification rules. Explicit authenticated linking preserves Customer identity and Booking/Ticket ownership. Resend sends verification codes from the backend; SMTP remains an explicit alternative. See [Identity backend](identity.md) for configuration and limits. Apple login remains unimplemented. The frontend never consumes provider tokens or assumes a provider button click has authenticated the customer.
 
 Google requires OAuth credentials and a registered redirect URI, and its documented server flow validates the returned identity before authentication. See [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect).
 

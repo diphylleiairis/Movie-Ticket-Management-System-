@@ -369,10 +369,31 @@ class IdentityIntegrationTests {
     }
 
     @Test void mailFailureRollsBackRegistration() {
-        doThrow(new com.se113.movie_ticket_ms.modules.identity.infrastructure.SmtpIdentityMail.DeliveryUnavailable())
+        doThrow(new IdentityMail.DeliveryUnavailable())
             .when(mail).verification(anyString(), anyString());
         assertThrows(RuntimeException.class, () -> register());
         assertEquals(0, jdbc.queryForObject("select count(*) from movie_app.users", Integer.class));
+    }
+
+    @Test void mailFailureReturnsServiceUnavailableWithoutCreatingAccount() throws Exception {
+        doThrow(new IdentityMail.DeliveryUnavailable()).when(mail).verification(anyString(), anyString());
+        var result = postJson("register", Map.of("fullName", "Customer", "email", email,
+            "password", "Password123", "acceptedTerms", true), null);
+        assertEquals(503, result.getResponse().getStatus());
+        assertEquals("EMAIL_UNAVAILABLE", body(result).get("code").asText());
+        assertEquals(0, jdbc.queryForObject("select count(*) from movie_app.users", Integer.class));
+        assertEquals(0, jdbc.queryForObject("select count(*) from movie_app.email_verifications", Integer.class));
+    }
+
+    @Test void failedResendPreservesPreviousChallenge() {
+        UUID original = register();
+        String originalCode = sentCode;
+        jdbc.update("update movie_app.email_verifications set created_at=now()-interval '2 minutes'");
+        doThrow(new IdentityMail.DeliveryUnavailable()).when(mail).verification(anyString(), anyString());
+        assertThrows(IdentityMail.DeliveryUnavailable.class, () -> identity.resend(original));
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.email_verifications", Integer.class));
+        identity.verify(original, originalCode);
+        assertTrue(identity.authenticate(email, "Password123").active());
     }
 
     @ParameterizedTest

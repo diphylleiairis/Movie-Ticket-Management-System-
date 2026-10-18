@@ -1,7 +1,7 @@
 package com.se113.movie_ticket_ms.modules.identity.api;
 
 import com.se113.movie_ticket_ms.modules.identity.application.IdentityException;
-import com.se113.movie_ticket_ms.modules.identity.infrastructure.SmtpIdentityMail;
+import com.se113.movie_ticket_ms.modules.identity.application.IdentityMail;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +27,7 @@ public class IdentityErrors {
         return ResponseEntity.status(409).body(Map.of("code", "IDENTITY_CONFLICT", "message", "This identity is already registered or linked."));
     }
 
-    @ExceptionHandler(SmtpIdentityMail.DeliveryUnavailable.class)
+    @ExceptionHandler(IdentityMail.DeliveryUnavailable.class)
     ResponseEntity<?> mail() {
         return ResponseEntity.status(503).body(Map.of("code", "EMAIL_UNAVAILABLE", "message", "Email delivery is unavailable. Please try again later."));
     }

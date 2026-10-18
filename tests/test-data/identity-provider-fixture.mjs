@@ -16,6 +16,18 @@ export async function startIdentityFixture() {
       const url = new URL(req.url, 'http://127.0.0.1:19090');
       if (url.pathname === '/jwks') return json(res, { keys: [jwk] });
       if (url.pathname === '/mail') return json(res, { code: inbox.get(url.searchParams.get('email')) || null });
+      if (url.pathname === '/emails' && req.method === 'POST') {
+        if (req.headers.authorization !== 'Bearer browser-resend-key') { res.writeHead(401); return res.end(); }
+        let body = ''; for await (const chunk of req) body += chunk;
+        const message = JSON.parse(body);
+        if (message.from !== 'cinema@example.test' || !Array.isArray(message.to)
+          || !message.to.every(email => /^[a-z0-9.-]+@example\.test$/.test(email))) {
+          res.writeHead(422); return res.end();
+        }
+        const code = message.text?.match(/verification code is ([0-9]{6})/i)?.[1];
+        if (code) for (const email of message.to) inbox.set(email, code);
+        return json(res, { id: randomUUID() });
+      }
       if (url.pathname === '/authorize') {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         return res.end(`<h1>Test Google identity</h1><form action="/approve">

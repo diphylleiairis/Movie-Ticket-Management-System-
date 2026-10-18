@@ -3,11 +3,13 @@ package com.se113.movie_ticket_ms.modules.identity.infrastructure;
 import com.se113.movie_ticket_ms.modules.identity.application.IdentityMail;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "identity.mail-provider", havingValue = "smtp")
 public class SmtpIdentityMail implements IdentityMail {
     private final ObjectProvider<JavaMailSender> senders;
     private final String from;
@@ -39,7 +41,4 @@ public class SmtpIdentityMail implements IdentityMail {
         catch (org.springframework.mail.MailException ex) { throw new DeliveryUnavailable(); }
     }
 
-    public static class DeliveryUnavailable extends RuntimeException {
-        public DeliveryUnavailable() { super("Email delivery is unavailable. Please try again later."); }
-    }
 }
