@@ -10,7 +10,7 @@ export type AuthLayoutContext = {
 
 export default function AuthLayout() {
 	const { pathname } = useLocation();
-	const mode = pathname === "/register" ? "register" : pathname === "/forgot-password" ? "forgot-password" : "login";
+	const mode = pathname === "/register" ? "register" : pathname === "/reset-password" ? "reset-password" : pathname === "/forgot-password" ? "forgot-password" : "login";
 	const registration = mode === "register";
 	const [scrolled, setScrolled] = useState(false);
 	const [infoTitle, setInfoTitle] = useState("");

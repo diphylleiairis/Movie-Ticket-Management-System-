@@ -23,6 +23,7 @@ export default function AppRoutes() {
 				<Route path="login" element={<AuthPage key="login" mode="login" />} />
 				<Route path="register" element={<AuthPage key="register" mode="register" />} />
 				<Route path="forgot-password" element={<AuthPage key="forgot-password" mode="forgot-password" />} />
+				<Route path="reset-password" element={<AuthPage key="reset-password" mode="reset-password" />} />
 			</Route>
 			<Route path="error/:status" element={<ErrorPage />} />
 			<Route path="404" element={<ErrorPage status={404} />} />

@@ -168,6 +168,7 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given Google or Apple ID sign-in is configured, provider authentication is validated by the backend before an application session is created.
 
 ### ID-03 — Password reset
+- The reset email includes a link to the frontend password form with its token already supplied; the customer enters and confirms a new password without copying a token. Opening the link does not consume it.
 - Given a registered customer requests password reset, when the request is accepted, then the reset process starts.
 - Given a valid reset token and new password are supplied, when reset is submitted, then the password is updated.
 - Given an invalid or expired reset token is supplied, when reset is attempted, then the system rejects the request.

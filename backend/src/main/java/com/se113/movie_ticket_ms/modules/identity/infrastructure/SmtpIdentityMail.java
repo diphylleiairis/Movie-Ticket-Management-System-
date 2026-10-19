@@ -13,10 +13,13 @@ import org.springframework.stereotype.Component;
 public class SmtpIdentityMail implements IdentityMail {
     private final ObjectProvider<JavaMailSender> senders;
     private final String from;
+    private final String frontend;
 
-    public SmtpIdentityMail(ObjectProvider<JavaMailSender> senders, @Value("${identity.mail-from:}") String from) {
+    public SmtpIdentityMail(ObjectProvider<JavaMailSender> senders, @Value("${identity.mail-from:}") String from,
+            @Value("${identity.frontend-url:http://localhost:5173}") String frontend) {
         this.senders = senders;
         this.from = from;
+        this.frontend = frontend;
     }
 
     @Override
@@ -26,7 +29,7 @@ public class SmtpIdentityMail implements IdentityMail {
 
     @Override
     public void passwordReset(String email, String token) {
-        send(email, "Reset your movie ticket password", "Your password reset token is " + token + ". It expires in 30 minutes. Ignore this email if you did not request a reset.");
+        send(email, "Reset your movie ticket password", PasswordResetEmail.text(frontend, token));
     }
 
     private void send(String email, String subject, String body) {

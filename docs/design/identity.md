@@ -51,6 +51,19 @@ VITE_IDENTITY_API_URL=/api/v1/identity
 VITE_GOOGLE_AUTH_URL=/oauth2/authorization/google
 ```
 
+The frontend defaults to these same-origin API and Google entry paths when the
+variables are absent or empty. Both login and registration use the backend OIDC
+flow; registration requires accepting terms before starting Google.
+
+For local Google login, set `SPRING_PROFILES_ACTIVE=dev,google`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_REDIRECT_URI=http://localhost:5173/login/oauth2/code/google` and
+`FRONTEND_URL=http://localhost:5173` in the ignored root `.env`. Register that exact
+callback in Google Cloud and open Vite at `http://localhost:5173`. Docker Compose
+forwards these settings. The optional `google` profile enables local OIDC; `dev`
+alone still supports email/password without Google credentials. Production
+continues to use `prod` with the deployed callback above.
+
 Rebuild Vercel after changing these values. Cookies are host-only, HttpOnly, Path=/,
 SameSite=Lax and Secure in production. Keep OAuth entry, callback and subsequent
 API requests on that same public frontend origin. Redirect destinations are a fixed
@@ -116,8 +129,17 @@ redirecting API calls to a generated login form.
 | POST `/password-reset` | `{email}` -> uniform `REQUEST_ACCEPTED`; sends instructions only to an eligible current verified Customer email |
 | POST `/password-reset/confirm` | `{token,password}` -> `PASSWORD_RESET`; token expires after thirty minutes and is one-time |
 
-The reset email currently contains a token for the confirm API; a dedicated frontend
-reset-confirmation form is not implemented. Login and reset requests are throttled
+Both Resend and SMTP reset emails contain a clickable link built from the backend's
+trusted `identity.frontend-url`: `/reset-password#token=<opaque-token>`.
+The fragment keeps the token out of HTTP request URLs and referrer headers.
+The frontend reads it automatically, asks for a new password and confirmation,
+then submits the token to the CSRF-protected confirm API. Opening the link alone
+does not consume it. Success clears passwords and removes the token from the
+current browser history entry, then offers sign-in. Missing, invalid, expired or
+used tokens offer a new reset-link request. Tokens remain hashed in storage,
+expire after thirty minutes and are single-use; password reset revokes older sessions.
+Set `FRONTEND_URL` to the origin where the user should open the password form.
+Login and reset requests are throttled
 in the current backend instance. Registration always creates CUSTOMER; seeded Admin
 and Cinema Staff can use password login with their existing database role.
 `/api/v1/admin/**` requires ADMIN and `/api/v1/ticket-validation/**` requires

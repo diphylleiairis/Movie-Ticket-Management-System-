@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
 	Link,
 	useNavigate,
+	useLocation,
 	useOutletContext,
 	useSearchParams,
 } from "react-router-dom";
@@ -13,13 +14,14 @@ import {
 	resendVerificationCode,
 	verifyRegistrationCode,
 	requestPasswordReset,
+	confirmPasswordReset,
 	signIn,
 	startSocialAuth,
 	type AuthProvider,
 } from "../../api/identity-api";
 import VerificationCodeInput from "./verification-code-input";
 
-type AuthMode = "login" | "register" | "forgot-password";
+type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
 
 const googleErrors: Record<string, string> = {
 	ACCOUNT_LINK_REQUIRED: "This email already has an account. Sign in with your password to link Google.",
@@ -146,6 +148,9 @@ function PasswordField({
 export default function AuthPage({ mode }: { mode: AuthMode }) {
 	const registration = mode === "register";
 	const resetting = mode === "forgot-password";
+	const confirmingReset = mode === "reset-password";
+	const location = useLocation();
+	const resetToken = new URLSearchParams(location.hash.slice(1)).get("token")?.trim() ?? "";
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const { openInfo } = useOutletContext<AuthLayoutContext>();
@@ -160,7 +165,8 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 		const code = searchParams.get("oauthError");
 		return code ? googleErrors[code] ?? googleErrors.GOOGLE_LOGIN_FAILED : "";
 	});
-	const [completed, setCompleted] = useState(false);
+	const [formCompleted, setCompleted] = useState(false);
+	const completed = formCompleted || (confirmingReset && !resetToken && location.state?.passwordReset === true);
 	const [challengeId, setChallengeId] = useState<string | null>(null);
 	const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(""));
 	const [verificationAction, setVerificationAction] = useState<
@@ -185,7 +191,11 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 			setError("Enter your full name.");
 			return;
 		}
-		if (registration && password !== confirmation) {
+		if (confirmingReset && !resetToken) {
+			setError("This reset link is missing its token. Request a new reset link.");
+			return;
+		}
+		if ((registration || confirmingReset) && password !== confirmation) {
 			setError("The passwords do not match.");
 			document.getElementById("confirm-password")?.focus();
 			return;
@@ -211,6 +221,12 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 				setVerificationNotice(
 					`A six-digit verification code has been sent to ${email.trim()}.`,
 				);
+			} else if (confirmingReset) {
+				await confirmPasswordReset(resetToken, password);
+				if (!active.current) return;
+				setPassword("");
+				setConfirmation("");
+				navigate("/reset-password", { replace: true, state: { passwordReset: true } });
 			} else if (resetting) {
 				await requestPasswordReset(email.trim());
 				if (!active.current) return;
@@ -314,11 +330,13 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 				{completed
 					? registration
 						? "Email verified"
+						: confirmingReset ? "Password changed"
 						: "Check your inbox"
 					: registration && challengeId
 						? "Verify your email"
 						: registration
 							? "Create your account"
+							: confirmingReset ? "Reset your password"
 							: resetting
 								? "Forgot your password?"
 								: "Welcome back"}
@@ -410,7 +428,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 					[&_small]:gap-[7px] [&_small]:text-[#77716a] [&_small]:text-[12px] [&_small]:leading-[1.5]"
 					role="status"
 				>
-					{registration ? (
+					{registration || confirmingReset ? (
 						<CheckCircle2 size={36} aria-hidden="true" />
 					) : (
 						<Mail size={36} aria-hidden="true" />
@@ -418,6 +436,8 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 					<p>
 						{registration
 							? `Your email ${email.trim()} has been verified. You can now sign in to your account.`
+							: confirmingReset
+								? "Your password has been changed. Sign in with your new password."
 							: "If an account uses this verified email, you’ll receive instructions to reset your password."}
 					</p>
 					<Link
@@ -440,11 +460,13 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 					<p className="auth-intro m-[0_0_20px] text-[#80796f] text-[14px] leading-[1.6]">
 						{registration
 							? "Your next favorite film is just a screening away."
+							: confirmingReset
+								? "Choose a new password for your account. Your reset link is valid for 30 minutes and can be used once."
 							: resetting
 								? "Enter your verified email and we’ll help you get back to the movies."
 								: "Sign in to book your next screening and keep all your cinema moments in one place."}
 					</p>
-					{!resetting && (
+					{!resetting && !confirmingReset && (
 						<>
 							<div
 								className="auth-providers grid grid-cols-1 gap-3 [&_button]:flex [&_button]:items-center
@@ -480,19 +502,24 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 							</div>
 						</>
 					)}
-					{error && (
+					{(error || (confirmingReset && !resetToken)) && (
 						<p
 							className="auth-error m-[0_0_14px] p-[10px_12px] [border:1px_solid_#e4c9c3] rounded-[6px] bg-[#fff4f0] text-[#8a3529]
 							text-[13px] leading-[1.6]"
 							role="alert"
 						>
-							{error}
+							{error || "This reset link is missing its token. Request a new reset link."}
+						</p>
+					)}
+					{confirmingReset && (
+						<p className="text-[13px] text-[#825b13]">
+							<Link to="/forgot-password">Request a new reset link</Link>
 						</p>
 					)}
 					<form onSubmit={submit} aria-busy={pending}>
 						<fieldset
 							className="auth-form-fields grid gap-4 min-w-0 m-0 p-0 border-0"
-							disabled={pending}
+							disabled={pending || (confirmingReset && !resetToken)}
 						>
 							{registration && (
 								<div
@@ -518,7 +545,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									/>
 								</div>
 							)}
-							<div
+							{!confirmingReset && <div
 								className="auth-field min-w-0 [&_>_label]:block [&_>_label]:mb-[7px] [&_>_label]:text-[#77716a] [&_>_label]:text-[10px]
 								[&_>_label]:font-semibold [&_input]:block [&_input]:w-full [&_input]:min-h-[42px] [&_input]:p-[11px_13px]
 								[&_input]:[border:1px_solid_#e5ded4] [&_input]:rounded-[6px] [&_input]:bg-white [&_input]:text-[#34312e]
@@ -540,17 +567,17 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									value={email}
 									onChange={(event) => setEmail(event.target.value)}
 								/>
-							</div>
+							</div>}
 							{!resetting && (
 								<PasswordField
 									id="auth-password"
-									label="PASSWORD"
+									label={confirmingReset ? "NEW PASSWORD" : "PASSWORD"}
 									value={password}
 									onChange={setPassword}
-									registration={registration}
+									registration={registration || confirmingReset}
 								/>
 							)}
-							{registration && (
+							{(registration || confirmingReset) && (
 								<PasswordField
 									id="confirm-password"
 									label="CONFIRM PASSWORD"
@@ -590,7 +617,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 									</span>
 								</label>
 							) : (
-								!resetting && (
+								!resetting && !confirmingReset && (
 									<div
 										className="auth-login-options flex justify-between items-center gap-3 text-[12px] [&_>_label]:flex
 										[&_>_label]:items-start [&_>_label]:gap-2 [&_>_label]:text-[#80796f] [&_>_label]:text-[12px]
@@ -618,12 +645,14 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 								bg-[var(--auth-gold)] text-[#171717] text-[12px] font-semibold no-underline
 								[&:hover:not(:disabled)]:bg-[#d9a326] disabled:cursor-wait disabled:opacity-[.65]"
 								type="submit"
-								disabled={pending}
+								disabled={pending || (confirmingReset && !resetToken)}
 							>
 								{pending
 									? "PLEASE WAIT…"
 									: registration
 										? "SEND VERIFICATION CODE"
+										: confirmingReset
+											? "RESET PASSWORD"
 										: resetting
 											? "SEND RESET LINK"
 											: searchParams.get("oauthError") === "ACCOUNT_LINK_REQUIRED"
@@ -643,7 +672,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 								Already have an account?{" "}
 								<Link to={authPagePath("login", returnTo)}>Sign in</Link>
 							</>
-						) : resetting ? (
+						) : resetting || confirmingReset ? (
 							<Link to={authPagePath("login", returnTo)}>Back to sign in</Link>
 						) : (
 							<>

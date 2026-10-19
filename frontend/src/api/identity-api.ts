@@ -22,7 +22,7 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 	return body as Record<string, unknown>;
 }
 
-async function postIdentity(action: "login" | "logout" | "register" | "password-reset" | "email-verification/confirm" | "email-verification/resend", payload: object, expectedStatus: string) {
+async function postIdentity(action: "login" | "logout" | "register" | "password-reset" | "password-reset/confirm" | "email-verification/confirm" | "email-verification/resend", payload: object, expectedStatus: string) {
 	if (!apiBase) throw new Error("The account service is not available yet. Please try again later.");
 	const endpoint = apiBase.href.replace(/\/$/, "");
 	try {
@@ -36,6 +36,8 @@ async function postIdentity(action: "login" | "logout" | "register" | "password-
 		});
 		const result = await readJson(response);
 		if (!response.ok) {
+			if (result.code === "INVALID_PASSWORD") throw new Error("Use at least 8 characters including a number, up to 72 UTF-8 bytes.");
+			if (result.code === "INVALID_RESET_TOKEN") throw new Error("This reset link is invalid or has expired. Request a new reset link.");
 			if (result.code === "EMAIL_UNAVAILABLE") throw new Error("The email could not be sent. Please try again later.");
 			if (result.code === "EMAIL_NOT_VERIFIED") throw new Error("Verify your email before signing in. Check your inbox for the verification code.");
 			if (result.code === "INVALID_VERIFICATION_CODE") throw new Error("The verification code is incorrect. Please check the six digits and try again.");
@@ -95,8 +97,11 @@ export function verifyRegistrationCode(challengeId: string, code: string) {
 export const requestPasswordReset = (email: string) =>
 	postIdentity("password-reset", { email }, "REQUEST_ACCEPTED");
 
+export const confirmPasswordReset = (token: string, password: string) =>
+	postIdentity("password-reset/confirm", { token, password }, "PASSWORD_RESET");
+
 export function startSocialAuth(provider: AuthProvider, intent: "login" | "register" | "link", returnTo: string) {
-	const url = configuredUrl(provider === "google" ? import.meta.env.VITE_GOOGLE_AUTH_URL : import.meta.env.VITE_APPLE_AUTH_URL);
+	const url = configuredUrl(provider === "google" ? import.meta.env.VITE_GOOGLE_AUTH_URL || "/oauth2/authorization/google" : import.meta.env.VITE_APPLE_AUTH_URL);
 	if (!url) throw new Error(`${provider === "google" ? "Google" : "Apple ID"} sign-in is not available yet. Please use email or try again later.`);
 	url.searchParams.set("intent", intent);
 	url.searchParams.set("returnTo", returnTo);

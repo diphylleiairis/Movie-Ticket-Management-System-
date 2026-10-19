@@ -18,6 +18,8 @@
 | ID-T14 | ID-02 | External/encoded redirect destinations fall back to frontend home | Integration |
 | ID-T15 | ID-01/03 | Resend sends server-authenticated email; missing key/sender, provider rejection, malformed response and connection errors fail safely without leaking provider details | Resend adapter tests |
 | ID-T16 | ID-02 | Default same-origin frontend API signs in; header restores account after navigation and signs out using backend session/CSRF | TestCafe |
+| ID-T17 | ID-03 | Reset email link opens password form with token supplied automatically; mismatched passwords are rejected; valid submission changes password; old password and reused/invalid/missing token are rejected; UI offers requesting a new link | Resend adapter + Integration + TestCafe |
+| ID-T18 | ID-01/02 | Default Google endpoint works without frontend env override; registration requires terms, creates Customer and later sign-in restores same Customer | TestCafe |
 
 Automated integration tests use only the dedicated loopback `identity_tests` database.
 Browser tests use deterministic local OIDC/Resend fixtures; real Google consent and

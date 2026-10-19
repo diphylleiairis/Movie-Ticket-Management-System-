@@ -8,7 +8,7 @@ services:
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       SERVER_ADDRESS: 0.0.0.0
       SERVER_PORT: 8080
       POSTGRES_HOST: ${POSTGRES_HOST:?Set POSTGRES_HOST in the root .env}
@@ -19,3 +19,7 @@ services:
       IDENTITY_MAIL_PROVIDER: ${IDENTITY_MAIL_PROVIDER:-resend}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       IDENTITY_MAIL_FROM: ${IDENTITY_MAIL_FROM:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/login/oauth2/code/google}

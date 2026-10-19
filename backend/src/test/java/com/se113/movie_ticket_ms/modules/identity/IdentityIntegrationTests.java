@@ -368,6 +368,16 @@ class IdentityIntegrationTests {
         mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
     }
 
+    @Test void expiredResetTokenCannotChangePassword() throws Exception {
+        passwordSession();
+        identity.requestPasswordReset(email);
+        jdbc.update("update movie_app.password_reset_tokens set created_at=now()-interval '31 minutes', expires_at=now()-interval '1 minute'");
+        var result = postJson("password-reset/confirm", Map.of("token", sentReset, "password", "ChangedPassword123"), null);
+        assertEquals(400, result.getResponse().getStatus());
+        assertEquals("INVALID_RESET_TOKEN", body(result).get("code").asText());
+        assertTrue(identity.authenticate(email, "Password123").active());
+    }
+
     @Test void mailFailureRollsBackRegistration() {
         doThrow(new IdentityMail.DeliveryUnavailable())
             .when(mail).verification(anyString(), anyString());

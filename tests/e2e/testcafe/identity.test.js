@@ -67,6 +67,57 @@ test('Verified Google creates an active Customer without email code', async t =>
   await t.expect(inbox.body.code).eql(null);
 });
 
+test('Google registration creates a Customer and later Google sign-in restores the same account', async t => {
+  const email = uniqueEmail();
+  await t.navigateTo(`${base}/register`).click(googleButton)
+    .expect(error.innerText).contains('Please agree');
+  await t.click(Selector('input[type="checkbox"]')).click(googleButton);
+  await approveGoogle(t, email);
+  await t.expect(location()).eql(`${base}/`);
+  const first = await sessionUser();
+  await t.expect(first.status).eql(200).expect(first.body.user.role).eql('CUSTOMER');
+  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+    .click(Selector('button').withText('Sign out'));
+  await t.navigateTo(`${base}/login`).click(googleButton);
+  await approveGoogle(t, email);
+  await t.expect(location()).eql(`${base}/`);
+  await t.expect((await sessionUser()).body.user.id).eql(first.body.user.id);
+});
+
+test('Reset email link opens password form with token, changes password and cannot be reused', async t => {
+  const email = uniqueEmail();
+  await register(t, email);
+  await t.navigateTo(`${base}/forgot-password`).typeText('#auth-email', email).click(submit)
+    .expect(Selector('.auth-completed').exists).ok();
+  const inbox = await t.request(`http://127.0.0.1:19090/mail?email=${encodeURIComponent(email)}`);
+  const link = inbox.body.resetLink;
+  await t.expect(link).match(/^http:\/\/127\.0\.0\.1:15173\/reset-password#token=[A-Za-z0-9_-]+$/);
+  await t.navigateTo(link).expect(Selector('#auth-email').exists).notOk()
+    .typeText('#auth-password', 'ChangedPassword123').typeText('#confirm-password', 'Mismatch123').click(submit)
+    .expect(error.innerText).contains('passwords do not match')
+    .typeText('#confirm-password', 'ChangedPassword123', { replace: true }).click(submit)
+    .expect(Selector('.auth-completed').innerText).contains('Your password has been changed')
+    .expect(location()).eql(`${base}/reset-password`);
+  await t.navigateTo(link).typeText('#auth-password', 'AnotherPassword123')
+    .typeText('#confirm-password', 'AnotherPassword123').click(submit)
+    .expect(error.innerText).contains('invalid or has expired');
+  await t.navigateTo(`${base}/login`).typeText('#auth-email', email)
+    .typeText('#auth-password', 'Password123').click(submit)
+    .expect(error.innerText).contains('email or password is incorrect')
+    .typeText('#auth-password', 'ChangedPassword123', { replace: true }).click(submit)
+    .expect(location()).eql(`${base}/`);
+});
+
+test('Missing or invalid reset token offers a new reset link', async t => {
+  await t.navigateTo(`${base}/reset-password`)
+    .expect(error.innerText).contains('missing its token').expect(submit.hasAttribute('disabled')).ok();
+  await t.navigateTo(`${base}/reset-password#token=invalid-token`)
+    .typeText('#auth-password', 'Password123').typeText('#confirm-password', 'Password123').click(submit)
+    .expect(error.innerText).contains('invalid or has expired')
+    .click(Selector('a').withText('Request a new reset link'))
+    .expect(location()).eql(`${base}/forgot-password`);
+});
+
 test('Unverified Google email is rejected and the error is visible', async t => {
   await t.click(googleButton);
   await approveGoogle(t, uniqueEmail(), false);

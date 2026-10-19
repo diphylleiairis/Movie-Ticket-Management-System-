@@ -50,7 +50,7 @@ class ResendIdentityMailTests {
     void stopProvider() { server.stop(0); }
 
     private ResendIdentityMail mail() {
-        return new ResendIdentityMail("test-key", "Cinema <noreply@example.test>", baseUrl);
+        return new ResendIdentityMail("test-key", "Cinema <noreply@example.test>", baseUrl, "https://cinema.example.test/");
     }
 
     @Test
@@ -69,7 +69,8 @@ class ResendIdentityMailTests {
     void passwordResetUsesSameProvider() {
         mail().passwordReset("customer@example.test", "opaque-reset-token");
         assertTrue(message.get().get("subject").asText().contains("Reset"));
-        assertTrue(message.get().get("text").asText().contains("opaque-reset-token"));
+        assertTrue(message.get().get("text").asText().contains("https://cinema.example.test/reset-password#token=opaque-reset-token"));
+        assertTrue(message.get().get("text").asText().contains("30 minutes"));
     }
 
     @ParameterizedTest
@@ -95,7 +96,7 @@ class ResendIdentityMailTests {
     @Test
     void missingCredentialsOrSenderDoesNotContactProvider() {
         for (var config : new String[][] {{"", "cinema@example.test"}, {"test-key", ""}}) {
-            var mail = new ResendIdentityMail(config[0], config[1], baseUrl);
+            var mail = new ResendIdentityMail(config[0], config[1], baseUrl, "http://localhost:5173");
             assertThrows(IdentityMail.DeliveryUnavailable.class,
                 () -> mail.verification("customer@example.test", "012345"));
         }

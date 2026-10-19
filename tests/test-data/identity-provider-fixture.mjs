@@ -9,13 +9,15 @@ export async function startIdentityFixture() {
   const grants = new Map();
   const access = new Map();
   const inbox = new Map();
+  const resetLinks = new Map();
   const html = value => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
   const json = (res, value) => { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://127.0.0.1:19090');
       if (url.pathname === '/jwks') return json(res, { keys: [jwk] });
-      if (url.pathname === '/mail') return json(res, { code: inbox.get(url.searchParams.get('email')) || null });
+      if (url.pathname === '/mail') return json(res, { code: inbox.get(url.searchParams.get('email')) || null,
+        resetLink: resetLinks.get(url.searchParams.get('email')) || null });
       if (url.pathname === '/emails' && req.method === 'POST') {
         if (req.headers.authorization !== 'Bearer browser-resend-key') { res.writeHead(401); return res.end(); }
         let body = ''; for await (const chunk of req) body += chunk;
@@ -26,6 +28,8 @@ export async function startIdentityFixture() {
         }
         const code = message.text?.match(/verification code is ([0-9]{6})/i)?.[1];
         if (code) for (const email of message.to) inbox.set(email, code);
+        const resetLink = message.text?.match(/http:\/\/127\.0\.0\.1:15173\/reset-password#token=[A-Za-z0-9_-]+/)?.[0];
+        if (resetLink) for (const email of message.to) resetLinks.set(email, resetLink);
         return json(res, { id: randomUUID() });
       }
       if (url.pathname === '/authorize') {

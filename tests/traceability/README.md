@@ -13,3 +13,8 @@ ID-T15 covers the Resend email boundary in
 ID-T13 also checks the `503 EMAIL_UNAVAILABLE` API response and rollback of a failed
 resend without invalidating the previous challenge. ID-T16 exercises the default
 frontend API path, restored header identity and Sign out through TestCafe.
+
+ID-T17 maps ID-03 to the reset-email link assertion in the Resend adapter tests,
+the existing one-time/session-revocation backend integration test and the TestCafe
+reset-link workflow. ID-T18 covers Google registration and subsequent sign-in
+using the default same-origin backend entry path without a frontend override.

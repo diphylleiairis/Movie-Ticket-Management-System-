@@ -19,16 +19,19 @@ public class ResendIdentityMail implements IdentityMail {
     private final RestClient client;
     private final String apiKey;
     private final String from;
+    private final String frontend;
 
     public ResendIdentityMail(@Value("${identity.resend-api-key:}") String apiKey,
             @Value("${identity.mail-from:}") String from,
-            @Value("${identity.resend-api-url:https://api.resend.com}") String baseUrl) {
+            @Value("${identity.resend-api-url:https://api.resend.com}") String baseUrl,
+            @Value("${identity.frontend-url:http://localhost:5173}") String frontend) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(8));
         this.client = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
         this.apiKey = apiKey;
         this.from = from;
+        this.frontend = frontend;
     }
 
     @Override
@@ -40,7 +43,7 @@ public class ResendIdentityMail implements IdentityMail {
     @Override
     public void passwordReset(String email, String token) {
         send(email, "Reset your movie ticket password",
-            "Your password reset token is " + token + ". It expires in 30 minutes. Ignore this email if you did not request a reset.");
+            PasswordResetEmail.text(frontend, token));
     }
 
     private void send(String email, String subject, String text) {
