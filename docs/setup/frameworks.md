@@ -26,7 +26,7 @@ The JDK path above is an example from the local machine; use the path to your ow
 | Area | Declared dependencies | Manifest |
 |---|---|---|
 | Frontend runtime | React 19, React DOM 19, Lucide React icons, React Router 7, qrcode.react 4 | `frontend/package.json` |
-| Frontend build and lint | TypeScript 6, Vite 8, React Vite plugin, ESLint and React lint plugins | `frontend/package.json` |
+| Frontend build and lint | TypeScript 6, Vite 8, React Vite plugin, Tailwind CSS 4 and its Vite plugin, ESLint and React lint plugins | `frontend/package.json` |
 | Browser E2E | TestCafe 3 | `tests/e2e/testcafe/package.json` |
 | Backend | Spring Boot 4.1.1, Web MVC, Data JPA, Security, Validation, PostgreSQL JDBC driver, Lombok, Spring Boot 4 dotenv integration, backend test starters | `backend/pom.xml` |
 

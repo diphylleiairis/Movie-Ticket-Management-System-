@@ -44,7 +44,7 @@ Agents MUST read the project documentation before planning, implementing, refact
 
 Customers:
 - Must have a registered account.
-- May register/sign in using email/password or configured Google and Apple ID providers. Social registration creates Customer accounts and preserves the email-verification rules below.
+- May register/sign in using email/password or configured Google and Apple ID providers. Social registration creates Customer accounts. Google email verification follows the exception below.
 - Must verify the registration email before the account becomes active for normal use.
 - Must authenticate before purchasing tickets.
 - Can browse active movies.
@@ -69,7 +69,9 @@ Email verification is required both during initial customer registration and whe
 ### Registration
 - A customer must provide a valid email address.
 - The email must be unique among customer accounts.
-- The system must send a six-digit numeric verification code to the registration email, and provide a six-digit code entry step and resend action.
+- Email/password registration must send a six-digit numeric verification code to the registration email, and provide a six-digit code entry step and resend action.
+- Owner decision (2026-10-17): a server-validated Google OpenID Connect identity with `email_verified=true` satisfies registration email verification; activate the new Customer without sending a six-digit code. A missing or false claim must not activate the Customer through Google login; offer email/password registration instead. This exception does not apply to Apple ID or email changes.
+- Resolve Google identities by provider and subject (`sub`). Matching an existing account's email alone does not authorize linking: require an active authenticated Customer to explicitly link their own Google identity. Public Google login must never create or grant Admin/Cinema Staff roles.
 - The account must not be treated as fully active until the registration email is successfully verified.
 - The server must validate the registration verification code; an invalid or expired code must not activate the account.
 
@@ -87,6 +89,7 @@ Admins:
 - Use seeded/provisioned Admin accounts; public registration does not create Admin accounts.
 - Can create and edit movie information.
 - Can configure the available Locations, Cinemas, and Halls used by the project.
+- Can configure each Cinema's check-in opening minutes before Showtime start and closing minutes after Showtime start. Each Cinema requires its own nonnegative values; the application must not invent a universal time window.
 - Can assign a predefined Seat Layout to a Hall.
 - Can create and manage showtimes.
 - Can remove a showtime only when it has no confirmed bookings.
@@ -100,7 +103,8 @@ Cinema Staff:
 - Use seeded/provisioned staff accounts.
 - Authenticate using the normal application login mechanism.
 - Can validate customer tickets at the cinema entrance using QR codes.
-- Can see whether a scanned ticket is valid, invalid, already used, or for the wrong showtime.
+- Can see whether a scanned ticket is valid, partially used, fully used, invalid, or for the wrong showtime, including the remaining admission count.
+- Confirm the actual number of people admitted on each check-in, up to the remaining purchased-seat count.
 - Must not gain unrelated Admin permissions.
 
 ### External Payment Provider
@@ -187,7 +191,9 @@ Cinema Staff Login
     -> Verify Ticket
     -> Check showtime/current validity
     -> Accept or reject
-    -> Mark ticket as used when successfully validated
+    -> Confirm number of people admitted
+    -> Add to cumulative admitted count
+    -> Mark ticket as USED only when all purchased admissions are consumed
 ```
 
 ---
@@ -369,6 +375,10 @@ Held seats may return to AVAILABLE when:
 
 The application integrates with an external Payment Provider.
 
+Configured providers are SePay for bank transfers and PayPal Sandbox for Visa/Mastercard card testing. Development and automated tests retain a fake provider; SePay Test Mode and PayPal Sandbox use test credentials and must not be mixed with live transactions. PayPal live card processing is outside the current configured scope.
+
+When provider currency differs from Booking currency, preserve the original Booking price and an immutable per-attempt quote of the provider amount, currency and conversion rate/source/time. Validate callbacks against that attempt's expected provider amount and currency; the browser cannot supply an authoritative exchange rate. Currency conversion must not change Booking identity, purchased seats or the original hold deadline.
+
 Do not design the application as if it directly moves money through banks/card networks.
 
 ```text
@@ -505,6 +515,8 @@ Never confirm a Booking solely because the browser says payment succeeded.
 
 A Ticket is generated only after valid successful payment confirmation.
 
+Each confirmed Booking has one Ticket and one QR code covering all purchased seats. The same QR may be used by groups arriving separately until the cumulative admitted count equals the purchased-seat count.
+
 A Ticket MUST contain:
 - Movie
 - Cinema
@@ -543,11 +555,16 @@ MVP behavior:
 Cinema Staff validates Tickets using QR codes.
 
 Rules:
-1. A valid unused ticket for the current showtime is accepted.
+1. A valid Ticket for the current showtime with remaining admissions is accepted, including after a partial check-in.
 2. Invalid/unknown QR codes are rejected.
-3. A previously used Ticket is rejected as already used.
+3. A fully used Ticket is rejected as already used. A successful partial check-in does not lock the QR.
 4. A Ticket for another showtime is rejected for the current showtime.
-5. Successful validation should mark the Ticket as USED to prevent reuse.
+5. Cinema Staff must confirm a positive integer number of people actually admitted on each check-in. Remaining admissions equal the confirmed Booking's purchased-seat count minus the cumulative admitted count.
+6. The server must reject any check-in count exceeding the remaining admissions without changing the count. Staff may confirm a smaller group within the remaining allowance; extra people are refused entry.
+7. Successful check-in adds the confirmed count atomically. Mark the Ticket as USED and lock its QR only when the cumulative count equals the purchased-seat count.
+8. Concurrent check-ins must never exceed the purchased-seat count. Repeating the same check-in request must not count people twice; a later group uses a new check-in request with the same QR.
+9. Preserve an audit record of accepted check-ins with Ticket, staff, admitted count, and time. Rejected scans must not consume admissions.
+10. Check-in is allowed from Showtime start minus that Cinema's configured opening minutes through Showtime start plus its configured closing minutes, inclusive at both boundaries. The server enforces this window using server time for every new group. Early or late arrivals are rejected without consuming admissions; a retry of an already processed request returns its original result without admitting additional people.
 
 ---
 
@@ -629,9 +646,10 @@ High-value E2E scenarios include:
 21. Two customers competing for the same seat.
 22. Sold Out showtime display.
 23. Upcoming ticket retrieval after browser/session closure.
-24. QR validation.
-25. Already-used ticket rejection.
+24. QR validation with partial group check-in and later arrivals using the same QR.
+25. Fully used ticket rejection and excess-person rejection.
 26. Wrong-showtime ticket rejection.
+27. Concurrent check-ins and repeated check-in requests do not exceed or double-count purchased admissions.
 
 Use TestCafe for browser-level workflows. Do not limit testing to happy paths.
 

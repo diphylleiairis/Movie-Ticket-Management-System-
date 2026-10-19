@@ -1,6 +1,12 @@
-# Bản nháp thiết kế cơ sở dữ liệu
+# Thiết kế cơ sở dữ liệu và schema Supabase
 
-**Trạng thái:** Đề xuất để thảo luận, chưa phải schema đã được phê duyệt.
+**Trạng thái:** Đã viết schema ban đầu để review; chưa chạy trên database. Các quyết định nghiệp vụ đã chốt được ghi riêng, những lựa chọn triển khai mới vẫn cần review.
+
+**Quyết định đã chốt ngày 2026-10-08:** Không đưa bảng session vào thiết kế database hiện tại. Mỗi Booking đã xác nhận có một Ticket/QR cho toàn bộ ghế, hỗ trợ check-in nhiều đợt đến khi đủ số người tương ứng với số ghế đã mua; xem [ADR 0003](../adr/0003-booking-qr-group-check-in.md).
+
+**Bổ sung đã chốt:** `payment_reversals` và `password_reset_tokens` là bảng chính. Schema hiện có **22 bảng**, gồm thêm `user_identities` phục vụ yêu cầu Google/Apple. File SQL: [V1__movie_ticket_schema.sql](../../backend/src/main/resources/db/migration/V1__movie_ticket_schema.sql); cách chạy và ranh giới trách nhiệm: [migration README](../../backend/src/main/resources/db/migration/README.md).
+
+**Provider và check-in đã chốt:** SePay cho chuyển khoản ngân hàng, PayPal Sandbox cho thử Visa/Mastercard. Admin nhập khoảng check-in riêng cho mỗi rạp: mở trước giờ bắt đầu và đóng sau giờ bắt đầu suất chiếu; xem [ADR 0005](../adr/0005-payment-providers-cinema-check-in.md).
 
 ## 1. Căn cứ và phạm vi
 
@@ -15,7 +21,7 @@ Bản nháp được lập từ các nguồn sau:
 - [backend/pom.xml](../../backend/pom.xml), [cấu hình dev](../../backend/src/main/resources/application-dev.yml) và [cấu hình test](../../backend/src/main/resources/application-test.yml): cấu hình kết nối PostgreSQL và JPA.
 - Các README trong [test cases](../../tests/test-cases/README.md), [traceability](../../tests/traceability/README.md) và [TestCafe](../../tests/e2e/testcafe/README.md): vị trí các đặc tả và kiểm thử dự kiến.
 
-Repo hiện có cấu hình PostgreSQL + JPA, nhưng chưa có entity hay migration định nghĩa các bảng nghiệp vụ trong mã nguồn đã khảo sát. Flyway được quy định trong kiến trúc, nhưng chưa được khai báo trong `backend/pom.xml`.
+Repo có cấu hình PostgreSQL + JPA và migration V1 cho Supabase/PostgreSQL. Entity và các workflow backend chưa được triển khai. Flyway được quy định trong kiến trúc, nhưng chưa được khai báo trong `backend/pom.xml`; việc viết migration không tự chạy SQL trên database.
 
 Các bảng dưới đây thuộc tám module: Identity, Catalog, Venue, Scheduling, Booking, Payment, Tickets và Ticket Validation. Mỗi module sở hữu dữ liệu của mình; module khác sử dụng application contract thay vì truy cập trực tiếp repository hoặc bảng của module đó.
 
@@ -25,8 +31,8 @@ Quy ước:
 
 - Mỗi bảng có khóa chính `id`, trừ bảng nối có thể sử dụng khóa chính ghép.
 - Các cột `*_id` là khóa ngoại; `used_by` tham chiếu tài khoản nhân viên.
-- Có thể bổ sung `created_at`, `updated_at` cho những bảng cần theo dõi thời điểm tạo và cập nhật.
-- Tên bảng, cột và cách tách bảng là đề xuất thiết kế; kiểu dữ liệu và ràng buộc SQL sẽ được chốt ở bước thiết kế schema.
+- SQL dùng UUID, `timestamptz`, số tiền `numeric(14,2)` và `CHECK` cho các trạng thái. Các bảng nghiệp vụ có timestamp theo nhu cầu, không tự xóa lịch sử.
+- Các cột dưới đây là danh sách chính; file migration là định nghĩa đầy đủ về kiểu dữ liệu, index, constraint và trigger.
 
 | STT | Module sở hữu | Bảng đề xuất | Mục đích | Cột chính dự kiến |
 |---:|---|---|---|---|
@@ -36,7 +42,7 @@ Quy ước:
 | 4 | Catalog | `genres` | Danh mục thể loại | `name`, `slug` |
 | 5 | Catalog | `movie_genres` | Quan hệ nhiều–nhiều giữa phim và thể loại | `movie_id`, `genre_id` |
 | 6 | Venue | `locations` | Các khu vực Việt Nam được cấu hình | `name`, `code` |
-| 7 | Venue | `cinemas` | Rạp thuộc một khu vực | `location_id`, `name`, `address` |
+| 7 | Venue | `cinemas` | Rạp thuộc một khu vực, có khoảng check-in riêng | `location_id`, `name`, `address`, `check_in_opens_before_minutes`, `check_in_closes_after_minutes` |
 | 8 | Venue | `seat_layouts` | Mẫu sơ đồ ghế dùng lại cho nhiều phòng | `name`, `description` |
 | 9 | Venue | `seat_layout_positions` | Các vị trí ghế trong mẫu sơ đồ | `seat_layout_id`, `seat_code`, `row_label`, `column_number`, `position_x`, `position_y` |
 | 10 | Venue | `halls` | Phòng chiếu thuộc rạp, được gán mẫu sơ đồ | `cinema_id`, `seat_layout_id`, `name`, `layout_locked_at` |
@@ -45,20 +51,15 @@ Quy ước:
 | 13 | Booking | `showtime_seats` | Trạng thái hiện tại của từng ghế theo suất chiếu | `showtime_id`, `seat_id`, `state`, `booking_id`, `hold_expires_at` |
 | 14 | Booking | `bookings` | Giao dịch đặt vé của khách hàng | `customer_id`, `showtime_id`, `status`, `hold_started_at`, `hold_expires_at`, `total_amount`, `currency`, `confirmed_at` |
 | 15 | Booking | `booking_seats` | Danh sách ghế đã yêu cầu và giá tại thời điểm đặt | `booking_id`, `showtime_id`, `seat_id`, `unit_price` |
-| 16 | Payment | `payment_attempts` | Các lần thanh toán của một booking | `booking_id`, `provider`, `provider_reference`, `idempotency_key`, `amount`, `currency`, `status`, `is_active` |
+| 16 | Payment | `payment_attempts` | Các lần thanh toán của một booking | `booking_id`, `provider`, `provider_environment`, `payment_method`, `provider_order_reference`, `provider_reference`, `idempotency_key`, `amount`, `currency`, `provider_amount`, `provider_currency`, `exchange_rate`, `exchange_rate_source`, `exchange_rate_quoted_at`, `status`, `is_active` |
 | 17 | Payment | `payment_events` | Lưu kết quả callback, truy vấn trạng thái và đối soát | `payment_attempt_id`, `provider_event_id`, `event_type`, `reported_status`, `verification_status`, `received_at`, `processed_at` |
-| 18 | Tickets | `tickets` | Vé được phát hành sau thanh toán thành công | `booking_id`, `qr_token_hash`, `customer_name_snapshot`, `ticket_details_snapshot`, `issued_at`, `used_at`, `used_by` |
+| 18 | Tickets | `tickets` | Một vé/QR cho cả Booking, theo dõi tổng số người đã vào | `booking_id`, `qr_token_hash`, `qr_token_ciphertext`, `qr_key_version`, `customer_name_snapshot`, `ticket_details_snapshot`, `admitted_count`, `issued_at`, `used_at`, `used_by` |
+| 19 | Ticket Validation | `ticket_validation_logs` | Lưu các lần check-in để kiểm toán và chống cộng trùng request | `ticket_id`, `staff_id`, `expected_showtime_id`, `request_id`, `requested_count`, `admitted_count`, `result`, `scanned_at` |
+| 20 | Payment | `payment_reversals` | Theo dõi yêu cầu hoàn tiền/hủy giao dịch và retry | `payment_attempt_id`, `operation_type`, `reason`, `amount`, `currency`, `status`, `provider_reference`, `idempotency_key`, `retry_count`, `last_error` |
+| 21 | Identity | `password_reset_tokens` | Lưu token reset mật khẩu; chức năng vẫn thuộc Release 2 | `user_id`, `verified_email_snapshot`, `token_hash`, `expires_at`, `consumed_at` |
+| 22 | Identity | `user_identities` | Liên kết cùng Customer với Google/Apple | `user_id`, `provider`, `provider_subject` |
 
-### Các bảng bổ sung tùy cách triển khai
-
-| Module sở hữu | Bảng | Khi cần | Cột chính dự kiến |
-|---|---|---|---|
-| Payment | `payment_reversals` | Nên tách để theo dõi yêu cầu hoàn tiền/hủy giao dịch và retry khi thanh toán thành công muộn nhưng không thể cấp vé | `payment_attempt_id`, `operation_type`, `reason`, `amount`, `status`, `provider_reference`, `idempotency_key` |
-| Ticket Validation | `ticket_validation_logs` | Khi cần lịch sử các lần quét QR, gồm cả lần bị từ chối | `ticket_id`, `staff_id`, `expected_showtime_id`, `result`, `scanned_at` |
-| Identity | `password_reset_tokens` | Release 2: đặt lại mật khẩu | `user_id`, `token_hash`, `expires_at`, `consumed_at` |
-| Identity | Bảng lưu session | Nếu chọn lưu phiên đăng nhập trong PostgreSQL; tên bảng và cấu trúc phụ thuộc cơ chế session | Tài khoản, mã phiên, thời điểm hết hạn |
-
-`ticket_validation_logs.ticket_id` có thể rỗng khi QR không tham chiếu đến vé tồn tại. Dù không tách `payment_reversals`, hệ thống vẫn phải lưu được bản ghi kiểm toán về thanh toán muộn và quá trình hoàn tiền/hủy giao dịch.
+`ticket_validation_logs.ticket_id` có thể rỗng khi QR không tham chiếu đến vé tồn tại. `payment_reversals` lưu kết quả xử lý với provider; không coi bản ghi hoàn tiền trong DB là bằng chứng provider đã hoàn tiền.
 
 ## 3. Ánh xạ dữ liệu demo
 
@@ -91,7 +92,8 @@ Các tab `Coming Soon`, `Festivals & Specials` và nội dung featured hiện l�
 - Một ghế vật lý xuất hiện trong nhiều `showtime_seats`, mỗi bản ghi thuộc một suất chiếu riêng.
 - Customer một–nhiều `bookings`; mỗi booking thuộc một suất chiếu và có nhiều `booking_seats`.
 - `bookings` một–nhiều `payment_attempts`; `payment_attempts` một–nhiều `payment_events`.
-- Quan hệ Booking–Ticket tạm đề xuất một–một, chỉ tạo Ticket sau khi Booking được xác nhận. Đây là giả định cần chốt trước khi viết schema.
+- Quan hệ Booking–Ticket đã chốt một–một: chỉ tạo Ticket sau khi Booking được xác nhận, `tickets.booking_id` duy nhất. Một QR dùng chung cho tất cả ghế trong Booking và có thể check-in nhiều đợt.
+- `tickets` một–nhiều `ticket_validation_logs`; mỗi lần check-in có request riêng, dùng lại cùng QR cho nhóm đến sau.
 
 ## 5. Ràng buộc nghiệp vụ cần bảo toàn
 
@@ -101,6 +103,7 @@ Các tab `Coming Soon`, `Festivals & Specials` và nội dung featured hiện l�
 - Khi đổi email, `users.email` vẫn giữ email đã xác thực hiện tại; email mới nằm trong yêu cầu xác thực cho đến khi xác thực thành công và kiểm tra lại tính duy nhất.
 - Đổi email phải giữ nguyên Customer identity và quan hệ Booking/Ticket. Password reset sử dụng email đã xác thực hiện tại.
 - Chỉ lưu password hash và token hash; Admin/Staff được provision hoặc seed, không tạo qua đăng ký công khai.
+- Không có bảng session trong thiết kế database hiện tại. Cookie phiên đăng nhập vẫn theo ADR 0002; nơi lưu dữ liệu phiên phía backend sẽ được xác định khi triển khai Identity. Cookie không thay thế dữ liệu Booking, Seat Hold hay Payment Attempt trong database.
 
 ### Catalog, Venue và Scheduling
 
@@ -123,6 +126,10 @@ Các tab `Coming Soon`, `Festivals & Specials` và nội dung featured hiện l�
 
 ### Payment
 
+- Provider: `SEPAY` + `BANK_TRANSFER` ở `TEST` hoặc `LIVE`; `PAYPAL` + `CARD` chỉ ở `SANDBOX`; `FAKE` + `FAKE` ở `TEST` cho các test xác định. Môi trường và method lưu trên từng attempt, callback phải khớp môi trường đã tạo attempt.
+- `amount`/`currency` là giá gốc Booking. `provider_amount`/`provider_currency` là số tiền thực sự yêu cầu provider. Phương án V1 dùng SePay VND và PayPal Sandbox USD; lưu tỷ giá theo chiều tiền provider trên mỗi đơn vị tiền Booking, nguồn và thời điểm quote. Không tự đặt tỷ giá cố định, không thay đổi quote khi retry cùng attempt. Tạo attempt mới có thể lấy quote mới trong hold gốc.
+- Kiểm tra kết quả với `provider_amount`/`provider_currency`, không so USD trực tiếp với VND. `payment_reversals.amount`/`currency` cũng dùng tiền provider. `provider_order_reference` lưu mã thanh toán/order dùng đối chiếu; `provider_reference` lưu transaction/capture được xác nhận. Khóa duy nhất gồm provider + môi trường để không lẫn test/live.
+- SePay: kiểm tra xác thực webhook, tài khoản nhận, giao dịch tiền vào, mã attempt, số tiền và ID giao dịch. PayPal: xác thực webhook/API, đối chiếu order/capture và chỉ nhận capture thành công làm SUCCESS. Khả năng hoàn tiền/hủy của từng kênh cần xác minh khi tích hợp; chuyển khoản ngân hàng không mặc nhiên có API refund tự động.
 - Một Booking có nhiều Payment Attempts nhưng chỉ một attempt active. Cần ràng buộc duy nhất có điều kiện và transaction khi tạo/retry attempt.
 - Idempotency áp dụng theo từng Payment Attempt. Callback trùng không được tạo thêm xác nhận hoặc Ticket.
 - Callback phải được kiểm tra chữ ký/xác thực, reference, amount, currency và trạng thái trước khi thay đổi Booking/Seat/Ticket.
@@ -134,20 +141,36 @@ Các tab `Coming Soon`, `Festivals & Specials` và nội dung featured hiện l�
 ### Tickets và Ticket Validation
 
 - Ticket chỉ phát hành sau thanh toán thành công đã được xác thực. Snapshot phải đủ để hiển thị Movie, Cinema, Showtime, Seats, Customer name, Booking ID và Price tại thời điểm phát hành; QR được cung cấp qua cơ chế phát hành đã chọn.
-- Cách tạo lại QR khi khách mở vé cần được thiết kế rõ; `qr_token_hash` phục vụ tra cứu/xác minh và không đủ để khôi phục token gốc.
-- Ticket Validation cập nhật trạng thái đã dùng thông qua application contract của Tickets. Kiểm tra đúng showtime và đánh dấu `used_at` nguyên tử để ngăn sử dụng lại.
+- Phương án V1: backend tạo QR token ngẫu nhiên, lưu hash để tra cứu và ciphertext để khôi phục cùng token khi mở My Tickets. Khóa mã hóa nằm ngoài database; `qr_key_version` hỗ trợ đổi khóa. Hash đơn lẻ không khôi phục được token.
+- `tickets.admitted_count` khởi tạo bằng 0. Tổng quyền vào cửa bằng số ghế đã mua trong `booking_seats` của Booking đã xác nhận; số còn lại được suy ra bằng tổng đó trừ `tickets.admitted_count`, không lưu một nguồn sự thật riêng cho số còn lại.
+- Sau khi kiểm tra QR và đúng showtime, Cinema Staff xác nhận số người thực tế cho vào ở lần này. Server chỉ chấp nhận số nguyên dương không vượt số còn lại; yêu cầu vượt giới hạn bị từ chối và không tăng bộ đếm. Nhân viên có thể xác nhận nhóm nhỏ hơn trong giới hạn, người dư không được vào.
+- Ticket Validation cập nhật bộ đếm thông qua application contract của Tickets. Việc kiểm tra giới hạn và tăng `admitted_count` phải nguyên tử, giữ `0 <= admitted_count <= số ghế đã mua`, kể cả khi nhiều nhân viên quét cùng mã đồng thời.
+- `used_at` và `used_by` chỉ được ghi khi đủ số người; `used_by` là nhân viên hoàn tất đợt cuối. Trước đó QR vẫn dùng được cho nhóm đến sau, trong điều kiện showtime hợp lệ. Khi đủ số người, khóa QR và từ chối mọi lần check-in tiếp theo.
+- `ticket_validation_logs.admitted_count` là số người thực sự được ghi nhận ở lần đó; lần bị từ chối có giá trị 0. Log ghi nhân viên và thời điểm của từng đợt, nên không dùng `used_by` để đại diện cho toàn bộ lịch sử.
+- `request_id` duy nhất cho mỗi thao tác check-in; gửi lại cùng request phải trả kết quả đã ghi mà không tăng thêm bộ đếm. Nhóm đến sau dùng request mới với cùng QR. Cập nhật bộ đếm và lưu log thành công phải nhất quán trong transaction qua application contract; cùng request với dữ liệu khác phải bị từ chối.
+- Ví dụ Booking có 5 ghế: đợt đầu vào 3 người, QR còn 2 lượt; đợt sau vào 2 người thì khóa QR. Nếu đợt sau có 3 người, server từ chối count 3; nhân viên xác nhận chỉ 2 người vào và từ chối người dư.
+- Mỗi Cinema bắt buộc có `check_in_opens_before_minutes` và `check_in_closes_after_minutes`, là số nguyên không âm do Admin nhập, không có mặc định chung. Khoảng hợp lệ là `[starts_at - mở_trước, starts_at + đóng_sau]`, bao gồm hai biên. Ví dụ cấu hình 30/15, suất 19:00: cho check-in 18:30–19:15; đây chỉ là ví dụ, không phải cấu hình cố định.
+- Hàm `check_in_ticket` kiểm tra thời gian thực của server sau khi lấy lock; đến sớm/trễ trả `CHECK_IN_TOO_EARLY`/`CHECK_IN_TOO_LATE`, không cộng lượt. Nhóm đến sau cũng phải trong khoảng hợp lệ. Mỗi request mới dùng cấu hình hiện tại của Cinema; retry request đã ghi trả kết quả cũ và không cộng thêm.
 - Ticket sắp tới luôn được hiển thị; lịch sử quá khứ có cửa sổ hiển thị 30 ngày. Không xóa bản ghi chỉ vì quá 30 ngày.
 - Customer không được hủy Ticket đã mua thành công.
 
-## 6. Các quyết định cần chốt trước khi viết schema
+## 6. Lựa chọn triển khai trong schema V1
 
-1. Một Ticket/QR cho cả Booking hay một Ticket/QR cho từng ghế.
-2. Cơ chế phát hành và hiển thị lại QR khi khách mở My Tickets.
-3. Danh sách trạng thái Booking, tài khoản và suất chiếu; giá trị Payment/Seat phải tuân theo quy tắc hiện hành.
-4. Cách lưu phiên đăng nhập và có cần bảng session trong PostgreSQL hay không.
-5. Chính sách giá vé: giá cố định theo suất chiếu hay cần thêm loại ghế và quy tắc giá.
-6. Vị trí lưu định dạng chiếu, âm thanh, ngôn ngữ và các nhãn biên tập của giao diện demo.
-7. Payment Provider cụ thể, reference/event ID được hỗ trợ, cơ chế đối soát và hoàn tiền/hủy giao dịch.
-8. Có tách `payment_reversals` và `ticket_validation_logs` thành bảng riêng hay không; vẫn phải bảo toàn yêu cầu kiểm toán và chống sử dụng vé lại.
+- Tất cả bảng thuộc schema riêng `movie_app`. React gọi Spring Boot; không truy cập bảng trực tiếp và không dùng `auth.users` làm nguồn tài khoản thứ hai. RLS bật cho mọi bảng, không có quyền truy cập cho trình duyệt; xem [ADR 0004](../adr/0004-supabase-schema-boundaries.md).
+- `users`: `PENDING_VERIFICATION`, `ACTIVE`, `DISABLED`. Tài khoản active cần password hash hoặc identity provider; Customer active phải xác thực email. Backend xác thực code sáu chữ số, giới hạn thử/resend và kiểm tra liên kết social identity.
+- `showtimes`: `DRAFT`, `PUBLISHED`, `REMOVED`. V1 tính giờ kết thúc từ thời lượng phim và dùng exclusion constraint cho cả thời gian chiếu + đệm 15 phút. Sửa thời lượng cập nhật các suất tương lai trong cùng transaction; thay đổi xung đột hoặc ảnh hưởng hold/Booking đã xác nhận bị từ chối. Suất cũ giữ thời lượng lịch sử.
+- `bookings`: `HELD`, `EXPIRED`, `CANCELLED`, `CONFIRMED`, `REVERSAL_PENDING`, `REVERSED`. Hold gốc và danh sách ghế/giá đã đặt giữ nguyên; `CONFIRMED` không được chuyển sang hủy. Kết quả payment vẫn được lưu riêng trên Payment Attempt.
+- V1 dùng giá ghế theo `showtimes.base_price`, tổng Booking bằng tổng giá snapshot trong `booking_seats`. Chưa có giá theo loại ghế, ưu đãi, phụ phí hoặc đồ ăn; checkout frontend hiện là demo và cần mô hình giá riêng trước khi tích hợp những mục này.
+- `hall_id` trên `showtime_seats` và `seat_layout_id` trên `seats` là cột phục vụ khóa ngoại ghép: giá trị bị ràng buộc với quan hệ gốc, không thể gán độc lập sai phòng/sai mẫu. Không thêm `movie_locations` hay trạng thái Sold Out độc lập.
+- Check-in dùng hàm `movie_app.check_in_ticket` do backend gọi sau xác thực staff. Hàm SQL khóa Ticket, kiểm tra khoảng thời gian của rạp và số còn lại, chống request trùng và ghi log cùng transaction.
+- Seat hold và xác nhận thanh toán dùng transaction do application contract điều phối. Backend worker xử lý hết hạn; SQL không tự chạy timer hay xác thực chữ ký Payment Provider.
 
-Bản nháp chỉ mô tả đề xuất dữ liệu. Các quyết định kiến trúc hoặc dữ liệu khó đảo ngược cần được phê duyệt và ghi ADR trước khi triển khai migration.
+## 7. Điểm còn cần chốt trước khi tích hợp backend
+
+1. Nơi lưu session phía backend; không có bảng session trong database hiện tại.
+2. Credentials/môi trường SePay, tài khoản nhận tiền và khả năng xử lý hoàn tiền; thiết lập merchant/card sandbox PayPal và tỷ giá VND→USD/nguồn quote cho test.
+3. Giá trị mở/đóng check-in cụ thể do Admin nhập cho từng Cinema, theo mốc giờ bắt đầu đã chốt.
+4. Mô hình giá nếu đưa phụ phí, đồ ăn, loại ghế hoặc ưu đãi từ demo vào sản phẩm.
+5. Định dạng chiếu, âm thanh, ngôn ngữ và nhãn biên tập khi có yêu cầu nghiệp vụ rõ.
+
+Schema đã được viết để review, chưa áp dụng lên Supabase. Cần thực thi và kiểm thử trên database test riêng trước khi sử dụng cho dữ liệu dự án; các lựa chọn mới trong ADR 0004 cần được duyệt khi triển khai.
