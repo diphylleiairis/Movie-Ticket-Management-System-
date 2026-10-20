@@ -3,7 +3,8 @@
 Identity implements ID-01, ID-02, ID-04 and the backend password-reset flow in ID-03.
 It uses the existing `movie_app.users`, `user_identities`, `email_verifications`
 and `password_reset_tokens` tables. No schema migration is applied by startup.
-Profile/email-change endpoints and Apple login are outside this implementation.
+Profile name/phone read/update endpoints are described in [Customer account](customer-account.md).
+Verified email-change endpoints and Apple login remain outside this implementation.
 
 ## Google activation and linking
 

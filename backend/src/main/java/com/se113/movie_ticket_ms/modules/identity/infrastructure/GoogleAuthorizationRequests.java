@@ -53,7 +53,7 @@ public final class GoogleAuthorizationRequests implements OAuth2AuthorizationReq
         try {
             var uri = URI.create(path);
             if (uri.getHost() != null || uri.getScheme() != null || uri.getRawFragment() != null
-                    || !java.util.Set.of("/", "/movie-list", "/movie-showtime", "/seat-selection", "/ticket-checkout")
+                    || !java.util.Set.of("/", "/movie-list", "/movie-showtime", "/seat-selection", "/ticket-checkout", "/account")
                         .contains(uri.getRawPath())) return "/";
             return uri.toString();
         } catch (IllegalArgumentException ex) { return "/"; }

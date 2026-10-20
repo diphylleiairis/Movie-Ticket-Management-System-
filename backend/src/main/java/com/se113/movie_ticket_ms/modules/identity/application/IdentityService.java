@@ -139,6 +139,27 @@ public class IdentityService {
         return account;
     }
 
+    public record Profile(UUID id, String email, String fullName, String phone, String role) {}
+
+    @Transactional
+    public Profile profile(UUID id) {
+        var account = current(id);
+        return new Profile(account.id(), account.email(), account.fullName(), accounts.phone(id), account.role());
+    }
+
+    @Transactional
+    public Account updateProfile(UUID id, String fullName, String phone) {
+        var account = current(id);
+        if (!"CUSTOMER".equals(account.role()))
+            throw new IdentityException(403, "ACCESS_DENIED", "Only Customers may edit their personal profile.");
+        if (fullName == null || fullName.isBlank() || fullName.strip().length() > 150)
+            throw new IdentityException(400, "INVALID_PROFILE", "Enter a name of up to 150 characters.");
+        phone = phone == null || phone.isBlank() ? null : phone.strip();
+        if (phone != null && !phone.matches("\\+?[0-9][0-9 ()-]{6,24}"))
+            throw new IdentityException(400, "INVALID_PROFILE", "Enter a valid phone number.");
+        return accounts.updateProfile(id, fullName.strip(), phone);
+    }
+
     @Transactional
     public void requestPasswordReset(String email) {
         email = normalizeEmail(email);

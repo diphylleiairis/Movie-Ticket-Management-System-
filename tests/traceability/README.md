@@ -2,6 +2,10 @@
 
 Map requirements to acceptance criteria, test cases, automated tests, and execution results here.
 
+Customer account: [ACC-01–10](../test-cases/customer-account.md) maps ID-05 and
+TCK-01/02/03 to IdentityProfileTests, MyTicketsTests, TicketQrTokensTests,
+IdentityIntegrationTests and `account.test.js`. See [design/run instructions](../../docs/design/customer-account.md).
+
 Identity: [acceptance cases](../test-cases/identity.md) map ID-01/02/03/04 and
 [ADR 0006](../../docs/adr/0006-google-verified-customer-identity.md) to
 [backend integration tests](../../backend/src/test/java/com/se113/movie_ticket_ms/modules/identity/IdentityIntegrationTests.java)

@@ -125,4 +125,13 @@ public class IdentityRepository {
         jdbc.update("update movie_app.password_reset_tokens set consumed_at = ? where user_id = ? and consumed_at is null",
             java.sql.Timestamp.from(now), id);
     }
+
+    public String phone(UUID id) {
+        return jdbc.queryForObject("select phone from movie_app.users where id = ?", String.class, id);
+    }
+
+    public Account updateProfile(UUID id, String fullName, String phone) {
+        jdbc.update("update movie_app.users set full_name = ?, phone = ? where id = ?", fullName, phone, id);
+        return byId(id).orElseThrow();
+    }
 }

@@ -22,7 +22,7 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 	return body as Record<string, unknown>;
 }
 
-async function postIdentity(action: "login" | "logout" | "register" | "password-reset" | "password-reset/confirm" | "email-verification/confirm" | "email-verification/resend", payload: object, expectedStatus: string) {
+async function postIdentity(action: "login" | "logout" | "register" | "password-reset" | "password-reset/confirm" | "email-verification/confirm" | "email-verification/resend" | "profile", payload: object, expectedStatus: string) {
 	if (!apiBase) throw new Error("The account service is not available yet. Please try again later.");
 	const endpoint = apiBase.href.replace(/\/$/, "");
 	try {
@@ -36,6 +36,8 @@ async function postIdentity(action: "login" | "logout" | "register" | "password-
 		});
 		const result = await readJson(response);
 		if (!response.ok) {
+			if (action === "profile" && result.code === "INVALID_PROFILE" && typeof result.message === "string") throw new Error(result.message);
+			if (action === "profile" && response.status === 401) throw new Error("Your session has expired. Sign in again to save your profile.");
 			if (action === "password-reset" && result.code === "ACCOUNT_NOT_FOUND") throw new Error("This account does not exist.");
 			if (action === "password-reset" && result.code === "ACCOUNT_UNAVAILABLE") throw new Error("This account is not active. Please contact an administrator.");
 			if (result.code === "INVALID_PASSWORD") throw new Error("Use at least 8 characters including a number, up to 72 UTF-8 bytes.");
@@ -79,6 +81,21 @@ export async function currentUser(signal?: AbortSignal): Promise<SessionUser | n
 }
 
 export const signOut = () => postIdentity("logout", {}, "SIGNED_OUT");
+
+export type CustomerProfile = SessionUser & { phone: string | null };
+
+export async function getProfile(signal?: AbortSignal): Promise<CustomerProfile | null> {
+	if (!apiBase) throw new Error("The account service is unavailable.");
+	const response = await fetch(`${apiBase.href.replace(/\/$/, "")}/profile`, { credentials: "include", cache: "no-store", signal });
+	if (response.status === 401) return null;
+	const body = await readJson(response);
+	if (!response.ok || typeof body.id !== "string" || typeof body.email !== "string" || typeof body.fullName !== "string"
+		|| typeof body.role !== "string" || (body.phone !== null && typeof body.phone !== "string"))
+		throw new Error("Your profile could not be loaded. Please try again.");
+	return { id: body.id, email: body.email, fullName: body.fullName, role: body.role, phone: body.phone };
+}
+
+export const updateProfile = (fullName: string, phone: string) => postIdentity("profile", { fullName, phone }, "PROFILE_UPDATED");
 
 function readVerificationChallenge(result: Record<string, unknown>) {
 	if (typeof result.challengeId !== "string" || !result.challengeId.trim()) throw new Error("The account service returned an unexpected response.");

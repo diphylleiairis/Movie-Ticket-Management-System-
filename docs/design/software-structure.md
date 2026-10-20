@@ -140,6 +140,10 @@ configuration stay in the backend. The frontend defaults to the same-origin
 Identity API, restores account display from the server session and signs out
 through the CSRF-protected backend endpoint.
 
+The signed-in account page combines Identity profile editing with the Tickets
+read API. Tickets obtains Booking ownership, Scheduling times and Venue check-in
+settings through public application contracts; see [Customer account](customer-account.md).
+
 ## Runtime environments
 
 Development, testing, and production use separate configuration profiles. Secrets and provider credentials are supplied through environment variables and are never committed.

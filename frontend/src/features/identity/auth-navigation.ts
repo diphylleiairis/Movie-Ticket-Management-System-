@@ -1,4 +1,4 @@
-const returnRoutes = new Set(["/", "/movie-list", "/movie-showtime", "/seat-selection", "/ticket-checkout"]);
+const returnRoutes = new Set(["/", "/movie-list", "/movie-showtime", "/seat-selection", "/ticket-checkout", "/account"]);
 
 export function safeReturnTo(value: string | null) {
 	if (!value) return "/";

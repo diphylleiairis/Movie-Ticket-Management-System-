@@ -43,8 +43,8 @@ test('Email registration verifies code, logs in, survives reload and logs out', 
   const next = await sessionUser();
   await t.expect(next.body.user.id).eql(first.body.user.id);
   await t.navigateTo(`${base}/`);
-  await t.click(Selector('button[aria-label="Account: Browser Customer"]'))
-    .expect(Selector('.site-header').innerText).contains(email)
+  await t.click(Selector('a[aria-label="Account: Browser Customer"]'))
+    .expect(Selector('#profile-email').value).eql(email)
     .click(Selector('button').withText('Sign out'))
     .expect(Selector('a[aria-label="Sign in to your account"]').exists).ok();
   await t.expect((await sessionUser()).status).eql(401);
@@ -76,7 +76,7 @@ test('Google registration creates a Customer and later Google sign-in restores t
   await t.expect(location()).eql(`${base}/`);
   const first = await sessionUser();
   await t.expect(first.status).eql(200).expect(first.body.user.role).eql('CUSTOMER');
-  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+  await t.click(Selector('a[aria-label="Account: Google Customer"]'))
     .click(Selector('button').withText('Sign out'));
   await t.navigateTo(`${base}/login`).click(googleButton);
   await approveGoogle(t, email);
@@ -115,7 +115,7 @@ test('Google Customer creates a password through reset email and keeps both sign
   await t.expect(location()).eql(`${base}/`);
   const original = await sessionUser();
   await t.expect(original.status).eql(200);
-  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+  await t.click(Selector('a[aria-label="Account: Google Customer"]'))
     .click(Selector('button').withText('Sign out'));
   await t.navigateTo(`${base}/forgot-password`).typeText('#auth-email', email).click(submit)
     .expect(Selector('.auth-completed').exists).ok();
@@ -128,7 +128,7 @@ test('Google Customer creates a password through reset email and keeps both sign
     .typeText('#auth-email', email).typeText('#auth-password', 'FirstPassword123').click(submit)
     .expect(location()).eql(`${base}/`);
   await t.expect((await sessionUser()).body.user.id).eql(original.body.user.id);
-  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+  await t.click(Selector('a[aria-label="Account: Google Customer"]'))
     .click(Selector('button').withText('Sign out'));
   await t.navigateTo(`${base}/login`).click(googleButton);
   await approveGoogle(t, email);
