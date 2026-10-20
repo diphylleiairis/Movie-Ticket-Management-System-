@@ -143,9 +143,12 @@ public class IdentityService {
     public void requestPasswordReset(String email) {
         email = normalizeEmail(email);
         accounts.lockKeys("email:" + email);
-        var account = accounts.byEmail(email).orElse(null);
-        // Identical public response for absent, disabled and social-only accounts.
-        if (account == null || !account.active() || !"CUSTOMER".equals(account.role()) || account.passwordHash() == null) return;
+        var account = accounts.byEmail(email).orElseThrow(() ->
+            new IdentityException(404, "ACCOUNT_NOT_FOUND", "This account does not exist."));
+        if (!"ACTIVE".equals(account.status()))
+            throw new IdentityException(403, "ACCOUNT_UNAVAILABLE", "This account is not active. Please contact an administrator.");
+        // Verified Customers may create their first password through the same reset flow.
+        if (!account.active() || !"CUSTOMER".equals(account.role())) return;
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);

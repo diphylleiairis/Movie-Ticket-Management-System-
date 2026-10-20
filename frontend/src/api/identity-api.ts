@@ -36,6 +36,8 @@ async function postIdentity(action: "login" | "logout" | "register" | "password-
 		});
 		const result = await readJson(response);
 		if (!response.ok) {
+			if (action === "password-reset" && result.code === "ACCOUNT_NOT_FOUND") throw new Error("This account does not exist.");
+			if (action === "password-reset" && result.code === "ACCOUNT_UNAVAILABLE") throw new Error("This account is not active. Please contact an administrator.");
 			if (result.code === "INVALID_PASSWORD") throw new Error("Use at least 8 characters including a number, up to 72 UTF-8 bytes.");
 			if (result.code === "INVALID_RESET_TOKEN") throw new Error("This reset link is invalid or has expired. Request a new reset link.");
 			if (result.code === "EMAIL_UNAVAILABLE") throw new Error("The email could not be sent. Please try again later.");

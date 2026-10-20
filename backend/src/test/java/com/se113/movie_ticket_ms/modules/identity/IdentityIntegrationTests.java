@@ -368,6 +368,30 @@ class IdentityIntegrationTests {
         mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
     }
 
+    @Test void googleCustomerCanCreateFirstPasswordWithoutLosingGoogleIdentity() throws Exception {
+        var googleLogin = callback(startGoogle(null, "register", "/"));
+        var session = (MockHttpSession) googleLogin.getRequest().getSession();
+        var account = identity.google(subject, email, "Google Customer", true, null);
+        assertNull(account.passwordHash());
+        assertThrows(RuntimeException.class, () -> identity.authenticate(email, "NewPassword123"));
+
+        var request = postJson("password-reset", Map.of("email", email), null);
+        assertEquals(200, request.getResponse().getStatus());
+        assertEquals("REQUEST_ACCEPTED", body(request).get("status").asText());
+        verify(mail).passwordReset(eq(email), anyString());
+        var token = sentReset;
+        assertNotNull(token);
+        var confirm = postJson("password-reset/confirm", Map.of("token", token, "password", "NewPassword123"), null);
+        assertEquals(200, confirm.getResponse().getStatus());
+        assertEquals("PASSWORD_RESET", body(confirm).get("status").asText());
+        assertEquals(account.id(), identity.authenticate(email, "NewPassword123").id());
+        assertEquals(account.id(), identity.google(subject, email, "Google Customer", true, null).id());
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.users", Integer.class));
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.user_identities", Integer.class));
+        assertThrows(RuntimeException.class, () -> identity.resetPassword(token, "AnotherPassword123"));
+        mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
+    }
+
     @Test void expiredResetTokenCannotChangePassword() throws Exception {
         passwordSession();
         identity.requestPasswordReset(email);

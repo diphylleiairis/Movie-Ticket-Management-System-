@@ -126,8 +126,17 @@ redirecting API calls to a generated login form.
 | POST `/login` | `{email,password,rememberMe}` -> `AUTHENTICATED`, public `user` |
 | GET `/me` | `AUTHENTICATED`, `{id,email,fullName,role}`; no-store |
 | POST `/logout` | Invalidates session/cookie -> `SIGNED_OUT` |
-| POST `/password-reset` | `{email}` -> uniform `REQUEST_ACCEPTED`; sends instructions only to an eligible current verified Customer email |
+| POST `/password-reset` | `{email}` -> `REQUEST_ACCEPTED` for eligible requests; `404 ACCOUNT_NOT_FOUND` if absent; `403 ACCOUNT_UNAVAILABLE` with administrator contact guidance if status is not `ACTIVE` |
 | POST `/password-reset/confirm` | `{token,password}` -> `PASSWORD_RESET`; token expires after thirty minutes and is one-time |
+
+Active Google-registered Customers may request the same reset link even before
+they have a password. A valid reset creates their first BCrypt password on the
+existing Customer account. The Google provider link and Customer ID stay intact,
+so both Google and email/password sign-in work afterward. The email goes only to
+the current verified account email. Missing accounts return `ACCOUNT_NOT_FOUND`;
+accounts whose status is not `ACTIVE` return `ACCOUNT_UNAVAILABLE` and must contact
+an administrator (owner decision, 2026-10-20). Active unverified and non-Customer
+accounts remain ineligible and receive `REQUEST_ACCEPTED` without a reset email.
 
 Both Resend and SMTP reset emails contain a clickable link built from the backend's
 trusted `identity.frontend-url`: `/reset-password#token=<opaque-token>`.

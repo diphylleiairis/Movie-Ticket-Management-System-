@@ -108,6 +108,34 @@ test('Reset email link opens password form with token, changes password and cann
     .expect(location()).eql(`${base}/`);
 });
 
+test('Google Customer creates a password through reset email and keeps both sign-in methods', async t => {
+  const email = uniqueEmail();
+  await t.navigateTo(`${base}/register`).click(Selector('input[type="checkbox"]')).click(googleButton);
+  await approveGoogle(t, email);
+  await t.expect(location()).eql(`${base}/`);
+  const original = await sessionUser();
+  await t.expect(original.status).eql(200);
+  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+    .click(Selector('button').withText('Sign out'));
+  await t.navigateTo(`${base}/forgot-password`).typeText('#auth-email', email).click(submit)
+    .expect(Selector('.auth-completed').exists).ok();
+  const inbox = await t.request(`http://127.0.0.1:19090/mail?email=${encodeURIComponent(email)}`);
+  await t.expect(inbox.body.resetLink).match(/^http:\/\/127\.0\.0\.1:15173\/reset-password#token=[A-Za-z0-9_-]+$/);
+  await t.navigateTo(inbox.body.resetLink).typeText('#auth-password', 'FirstPassword123')
+    .typeText('#confirm-password', 'FirstPassword123').click(submit)
+    .expect(Selector('.auth-completed').innerText).contains('Your password has been changed')
+    .click(Selector('a').withText('BACK TO SIGN IN'))
+    .typeText('#auth-email', email).typeText('#auth-password', 'FirstPassword123').click(submit)
+    .expect(location()).eql(`${base}/`);
+  await t.expect((await sessionUser()).body.user.id).eql(original.body.user.id);
+  await t.click(Selector('button[aria-label="Account: Google Customer"]'))
+    .click(Selector('button').withText('Sign out'));
+  await t.navigateTo(`${base}/login`).click(googleButton);
+  await approveGoogle(t, email);
+  await t.expect(location()).eql(`${base}/`);
+  await t.expect((await sessionUser()).body.user.id).eql(original.body.user.id);
+});
+
 test('Missing or invalid reset token offers a new reset link', async t => {
   await t.navigateTo(`${base}/reset-password`)
     .expect(error.innerText).contains('missing its token').expect(submit.hasAttribute('disabled')).ok();

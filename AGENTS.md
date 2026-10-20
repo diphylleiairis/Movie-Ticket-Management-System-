@@ -82,6 +82,7 @@ Email verification is required both during initial customer registration and whe
 - Until verification succeeds, the existing verified email remains the active email.
 - After successful verification, the new email becomes the active email while preserving the same Customer identity, Bookings, and Tickets.
 - Password-reset operations must use the current verified email.
+- Owner decision (2026-10-19): active Customers registered through Google may use Forgot password to receive a reset link at their current verified email and create their first password. Preserve their Customer identity and Google provider link; both Google and email/password sign-in remain available after successful password creation.
 
 ### Admin
 

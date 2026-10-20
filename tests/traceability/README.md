@@ -18,3 +18,7 @@ ID-T17 maps ID-03 to the reset-email link assertion in the Resend adapter tests,
 the existing one-time/session-revocation backend integration test and the TestCafe
 reset-link workflow. ID-T18 covers Google registration and subsequent sign-in
 using the default same-origin backend entry path without a frontend override.
+
+ID-T19 maps the owner decision on 2026-10-19 to backend integration and TestCafe
+coverage for Google Customers creating a first password using the reset email,
+then signing in through both methods with the same Customer ID.

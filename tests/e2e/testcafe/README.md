@@ -9,7 +9,7 @@ with `node tests/test-data/run-identity-e2e.mjs` from the repository root. Follo
 [Identity setup](../../../docs/design/identity.md) to prepare its isolated Docker
 PostgreSQL container and backend JAR. Google credentials and external email are not used.
 
-This directory contains eight Identity tests and six page-recovery tests. Run
+This directory contains nine Identity tests and six page-recovery tests. Run
 `npm.cmd run test:e2e:identity` for Identity. Run `npm.cmd run test:e2e:pages`
 directly for page recovery; its runner starts Vite on an available local port
 and closes it afterwards. Set `PAGE_TEST_BROWSER=chrome` for a visible browser.
