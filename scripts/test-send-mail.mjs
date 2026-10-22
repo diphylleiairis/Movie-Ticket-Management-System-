@@ -1,26 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { parseArgs, parseEnv } from 'node:util';
 
-const usage = `Send one test email using Resend (Node.js 22+).
+const usage = `Send one test email using the published Resend password-reset template (Node.js 22+).
 
   node scripts/test-send-mail.mjs --to you@example.com
   node scripts/test-send-mail.mjs --to you@example.com --from "Support <support@example.com>"
+  node scripts/test-send-mail.mjs --to you@example.com --user-name "Nguyen An" --reset-url "https://example.com/reset-password#token=test-only"
 
 Options:
   --to <email>       Required recipient
   --from <sender>    Override IDENTITY_MAIL_FROM for this invocation
   --reply-to <email> Optional reply address for this test email
   --subject <text>  Override the test subject
+  --user-name <name> USER_NAME template variable (default: Test Customer)
+  --reset-url <url>  RESET_URL template variable (default: FRONTEND_URL + a test-only reset link)
   --dry-run         Validate configuration without sending or showing the API key
   --help            Show usage
 
 Reads repository-root .env; existing environment variables take precedence.
-Uses RESEND_API_KEY and IDENTITY_MAIL_FROM. No backend/database is required.`;
+Uses RESEND_API_KEY and IDENTITY_MAIL_FROM. No backend/database is required.
+The default link contains a dummy token and cannot reset a real password.`;
 
 async function main() {
   const { values } = parseArgs({ options: {
     to: { type: 'string' }, from: { type: 'string' },
     'reply-to': { type: 'string' }, subject: { type: 'string' },
+    'user-name': { type: 'string' }, 'reset-url': { type: 'string' },
     'dry-run': { type: 'boolean' }, help: { type: 'boolean' },
   } });
   if (values.help) { console.log(usage); return; }
@@ -44,9 +49,22 @@ async function main() {
     throw new Error('Supply a valid --reply-to email address.');
   if (!key) throw new Error('Set RESEND_API_KEY in .env or the environment.');
 
+  const userName = (values['user-name'] ?? 'Test Customer').trim();
+  if (!userName) throw new Error('Supply a nonempty --user-name.');
+  let resetUrl;
+  try {
+    resetUrl = values['reset-url'] !== undefined
+      ? new URL(values['reset-url'])
+      : new URL('/reset-password#token=test-only-not-valid', config.FRONTEND_URL || 'http://localhost:5173');
+    if (!['https:', 'http:'].includes(resetUrl.protocol) || resetUrl.username || resetUrl.password)
+      throw new Error();
+  } catch {
+    throw new Error('Supply a valid HTTP(S) --reset-url or FRONTEND_URL.');
+  }
+
   const message = {
-    from, to: [to], subject: values.subject ?? 'The Lumiere - Test email',
-    text: `This is a test email from the Movie Ticket Management System.\nSent at: ${new Date().toISOString()}\nNo verification code or password-reset token is included.`,
+    from, to: [to], subject: values.subject ?? 'Reset your movie ticket password',
+    template: { id: 'password-reset', variables: { RESET_URL: resetUrl.href, USER_NAME: userName } },
     ...(values['reply-to'] ? { reply_to: values['reply-to'] } : {}),
   };
   if (values['dry-run']) {
@@ -66,7 +84,7 @@ async function main() {
     throw new Error('Network error or timeout. Check Resend logs before retrying; delivery status may be unknown.');
   }
   if (!response.ok)
-    throw new Error(`Resend rejected the request (HTTP ${response.status}). Check API key permissions, verified sender domain and recipient restrictions in Resend.`);
+    throw new Error(`Resend rejected the request (HTTP ${response.status}). Check API key permissions, verified sender domain, recipient restrictions and the published password-reset template with RESET_URL/USER_NAME in Resend.`);
   const result = await response.json();
   if (typeof result.id !== 'string' || !result.id)
     throw new Error('Unexpected Resend response. Check Resend logs before retrying.');

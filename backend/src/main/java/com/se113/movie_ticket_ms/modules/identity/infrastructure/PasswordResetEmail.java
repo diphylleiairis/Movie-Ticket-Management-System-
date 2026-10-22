@@ -5,12 +5,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 final class PasswordResetEmail {
     private PasswordResetEmail() {}
 
-    static String text(String frontend, String token) {
+    static String url(String frontend, String token) {
         // Fragments reach the browser without putting the secret in HTTP request URLs.
-        String link = UriComponentsBuilder.fromUriString(frontend.replaceAll("/$", ""))
+        return UriComponentsBuilder.fromUriString(frontend.replaceAll("/$", ""))
             .path("/reset-password").fragment("token={token}")
             .encode().buildAndExpand(token).toUriString();
-        return "Open this link to reset your password:\n" + link
+    }
+
+    static String text(String frontend, String token) {
+        return "Open this link to reset your password:\n" + url(frontend, token)
             + "\n\nThis link expires in 30 minutes and can be used once. Ignore this email if you did not request a reset.";
     }
 }

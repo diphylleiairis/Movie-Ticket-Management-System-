@@ -12,6 +12,8 @@ function configuredUrl(value: unknown) {
 }
 
 const apiBase = configuredUrl(import.meta.env.VITE_IDENTITY_API_URL || "/api/v1/identity");
+// Allow the Render free-plan backend to start after an idle period.
+const requestTimeoutMs = 180_000;
 
 async function readJson(response: Response): Promise<Record<string, unknown>> {
 	if (!response.headers.get("content-type")?.includes("json")) throw new Error("The account service is unavailable. Please try again later.");
@@ -26,12 +28,12 @@ async function postIdentity(action: "login" | "logout" | "register" | "password-
 	if (!apiBase) throw new Error("The account service is not available yet. Please try again later.");
 	const endpoint = apiBase.href.replace(/\/$/, "");
 	try {
-		const csrfResponse = await fetch(`${endpoint}/csrf`, { credentials: "include", cache: "no-store", signal: AbortSignal.timeout(15000) });
+		const csrfResponse = await fetch(`${endpoint}/csrf`, { credentials: "include", cache: "no-store", signal: AbortSignal.timeout(requestTimeoutMs) });
 		if (!csrfResponse.ok) throw new Error("The account service is unavailable. Please try again later.");
 		const csrf = await readJson(csrfResponse);
 		if (typeof csrf.token !== "string" || !csrf.token) throw new Error("The account service is unavailable. Please try again later.");
 		const response = await fetch(`${endpoint}/${action}`, {
-			method: "POST", credentials: "include", cache: "no-store", signal: AbortSignal.timeout(15000),
+			method: "POST", credentials: "include", cache: "no-store", signal: AbortSignal.timeout(requestTimeoutMs),
 			headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrf.token }, body: JSON.stringify(payload),
 		});
 		const result = await readJson(response);

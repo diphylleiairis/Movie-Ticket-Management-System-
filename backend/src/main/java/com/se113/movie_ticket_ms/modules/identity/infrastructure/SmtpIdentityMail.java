@@ -28,7 +28,7 @@ public class SmtpIdentityMail implements IdentityMail {
     }
 
     @Override
-    public void passwordReset(String email, String token) {
+    public void passwordReset(String email, String token, String fullName) {
         send(email, "Reset your movie ticket password", PasswordResetEmail.text(frontend, token));
     }
 

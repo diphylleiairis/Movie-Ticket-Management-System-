@@ -143,7 +143,7 @@ class IdentityIntegrationTests {
         verified = true; includeVerification = true; audience = "test-client"; issuer = "https://accounts.google.com"; wrongSignature = false;
         reset(mail);
         doAnswer(call -> { sentCode = call.getArgument(1); return null; }).when(mail).verification(anyString(), anyString());
-        doAnswer(call -> { sentReset = call.getArgument(1); return null; }).when(mail).passwordReset(anyString(), anyString());
+        doAnswer(call -> { sentReset = call.getArgument(1); return null; }).when(mail).passwordReset(anyString(), anyString(), anyString());
     }
 
     @AfterAll static void stopGoogle() { GOOGLE.stop(0); }
@@ -403,7 +403,7 @@ class IdentityIntegrationTests {
         var request = postJson("password-reset", Map.of("email", email), null);
         assertEquals(200, request.getResponse().getStatus());
         assertEquals("REQUEST_ACCEPTED", body(request).get("status").asText());
-        verify(mail).passwordReset(eq(email), anyString());
+        verify(mail).passwordReset(eq(email), anyString(), eq(account.fullName()));
         var token = sentReset;
         assertNotNull(token);
         var confirm = postJson("password-reset/confirm", Map.of("token", token, "password", "NewPassword123"), null);

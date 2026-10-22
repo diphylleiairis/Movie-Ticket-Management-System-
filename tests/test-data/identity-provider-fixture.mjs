@@ -28,7 +28,17 @@ export async function startIdentityFixture() {
         }
         const code = message.text?.match(/verification code is ([0-9]{6})/i)?.[1];
         if (code) for (const email of message.to) inbox.set(email, code);
-        const resetLink = message.text?.match(/http:\/\/127\.0\.0\.1:15173\/reset-password#token=[A-Za-z0-9_-]+/)?.[0];
+        let resetLink;
+        if (message.template) {
+          const { id, variables } = message.template;
+          if (id !== 'password-reset' || typeof variables?.USER_NAME !== 'string' || !variables.USER_NAME
+            || typeof variables.RESET_URL !== 'string'
+            || !/^http:\/\/127\.0\.0\.1:15173\/reset-password#token=[A-Za-z0-9_-]+$/.test(variables.RESET_URL)
+            || ['text', 'html', 'react'].some(key => key in message)) {
+            res.writeHead(422); return res.end();
+          }
+          resetLink = variables.RESET_URL;
+        }
         if (resetLink) for (const email of message.to) resetLinks.set(email, resetLink);
         return json(res, { id: randomUUID() });
       }

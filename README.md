@@ -93,7 +93,22 @@ npm.cmd run dev --workspace frontend
 
 Truy cập `http://localhost:5173`. Vite proxy `/api`, `/oauth2` và `/login/oauth2/code` tới backend local. Email auth mặc định gọi `/api/v1/identity`, không cần thêm frontend env.
 
-Để bật nút đăng nhập Google, cấu hình `VITE_GOOGLE_AUTH_URL=/oauth2/authorization/google` trong `frontend/.env.local` và cấu hình Google OAuth ở backend theo [hướng dẫn Identity](docs/design/identity.md). Khởi động lại Vite sau khi thay đổi env.
+Đăng nhập Google local cần các biến sau trong `.env` ở thư mục gốc:
+
+```dotenv
+SPRING_PROFILES_ACTIVE=dev,google
+GOOGLE_CLIENT_ID=<OAuth Client ID của bạn>
+GOOGLE_CLIENT_SECRET=<OAuth Client Secret của bạn>
+GOOGLE_REDIRECT_URI=http://localhost:5173/login/oauth2/code/google
+FRONTEND_URL=http://localhost:5173
+```
+
+Đăng ký đúng callback trên trong Google Cloud. Sau khi điền cấu hình, chạy lại
+`docker compose up -d --build backend` để cập nhật container. Nếu chạy Maven,
+đổi biến PowerShell thành `$env:SPRING_PROFILES_ACTIVE = 'dev,google'` rồi khởi động lại backend.
+Frontend mặc định dùng `/oauth2/authorization/google`, không cần thêm biến frontend.
+Profile `dev` riêng lẻ chỉ bật email/password; endpoint Google sẽ trả 404 khi chưa bật
+profile `google`. Xem [hướng dẫn Identity](docs/design/identity.md).
 
 ## Triển khai
 

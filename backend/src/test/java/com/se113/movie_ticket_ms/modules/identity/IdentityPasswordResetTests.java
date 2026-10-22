@@ -62,7 +62,7 @@ class IdentityPasswordResetTests {
         identity.requestPasswordReset("  CUSTOMER@example.com  ");
 
         verify(accounts).resetToken(eq(account.id()), eq(EMAIL), anyString(), eq(Instant.EPOCH));
-        verify(mail).passwordReset(eq(EMAIL), anyString());
+        verify(mail).passwordReset(eq(EMAIL), anyString(), eq(account.fullName()));
     }
 
     private Account account(String status) {

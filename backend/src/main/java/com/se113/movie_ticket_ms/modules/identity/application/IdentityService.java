@@ -174,7 +174,7 @@ public class IdentityService {
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         accounts.resetToken(account.id(), account.email(), tokenHash(token), accounts.now());
-        mail.passwordReset(account.email(), token);
+        mail.passwordReset(account.email(), token, account.fullName());
     }
 
     @Transactional

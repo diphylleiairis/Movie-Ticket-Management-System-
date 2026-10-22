@@ -66,11 +66,31 @@ class ResendIdentityMailTests {
     }
 
     @Test
-    void passwordResetUsesSameProvider() {
-        mail().passwordReset("customer@example.test", "opaque-reset-token");
+    void passwordResetUsesPublishedTemplateWithCustomerNameAndResetUrl() {
+        mail().passwordReset("customer@example.test", "opaque-reset-token", "Nguyễn An");
+        assertEquals(1, requests.get());
+        assertEquals("Bearer test-key", authorization.get());
+        assertEquals("customer@example.test", message.get().get("to").get(0).asText());
         assertTrue(message.get().get("subject").asText().contains("Reset"));
-        assertTrue(message.get().get("text").asText().contains("https://cinema.example.test/reset-password#token=opaque-reset-token"));
-        assertTrue(message.get().get("text").asText().contains("30 minutes"));
+        var template = message.get().get("template");
+        assertEquals("password-reset", template.get("id").asText());
+        var variables = template.get("variables");
+        assertEquals("https://cinema.example.test/reset-password#token=opaque-reset-token", variables.get("RESET_URL").asText());
+        assertEquals("Nguyễn An", variables.get("USER_NAME").asText());
+        assertFalse(message.get().has("text"));
+        assertFalse(message.get().has("html"));
+        assertFalse(message.get().has("react"));
+    }
+
+    @Test
+    void rejectedTemplateIsDeliveryUnavailableWithoutRetrying() {
+        status = 422;
+        response = "{\"message\":\"private-template-details\"}";
+        var error = assertThrows(IdentityMail.DeliveryUnavailable.class,
+            () -> mail().passwordReset("customer@example.test", "opaque-reset-token", "Customer"));
+        assertFalse(error.getMessage().contains("private-template-details"));
+        assertNull(error.getCause());
+        assertEquals(1, requests.get());
     }
 
     @ParameterizedTest
