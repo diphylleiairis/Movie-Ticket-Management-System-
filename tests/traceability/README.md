@@ -2,6 +2,10 @@
 
 Map requirements to acceptance criteria, test cases, automated tests, and execution results here.
 
+Customer account: [ACC-01–10](../test-cases/customer-account.md) maps ID-05 and
+TCK-01/02/03 to IdentityProfileTests, MyTicketsTests, TicketQrTokensTests,
+IdentityIntegrationTests and `account.test.js`. See [design/run instructions](../../docs/design/customer-account.md).
+
 Identity: [acceptance cases](../test-cases/identity.md) map ID-01/02/03/04 and
 [ADR 0006](../../docs/adr/0006-google-verified-customer-identity.md) to
 [backend integration tests](../../backend/src/test/java/com/se113/movie_ticket_ms/modules/identity/IdentityIntegrationTests.java)
@@ -18,3 +22,7 @@ ID-T17 maps ID-03 to the reset-email link assertion in the Resend adapter tests,
 the existing one-time/session-revocation backend integration test and the TestCafe
 reset-link workflow. ID-T18 covers Google registration and subsequent sign-in
 using the default same-origin backend entry path without a frontend override.
+
+ID-T19 maps the owner decision on 2026-10-19 to backend integration and TestCafe
+coverage for Google Customers creating a first password using the reset email,
+then signing in through both methods with the same Customer ID.

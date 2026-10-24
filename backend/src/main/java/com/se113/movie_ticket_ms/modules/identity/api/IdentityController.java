@@ -54,6 +54,7 @@ public class IdentityController {
     public record Challenge(@NotNull UUID challengeId) {}
     public record ResetRequest(@NotBlank @Email @Size(max = 254) String email) {}
     public record Reset(@NotBlank @Size(max = 200) String token, @NotBlank @Size(max = 72) String password) {}
+    public record ProfileUpdate(@NotBlank @Size(max = 150) String fullName, @Size(max = 26) String phone) {}
     public record User(UUID id, String email, String fullName, String role) {
         static User from(Account account) { return new User(account.id(), account.email(), account.fullName(), account.role()); }
     }
@@ -119,6 +120,33 @@ public class IdentityController {
         limits.check("reset-email:" + IdentityService.normalizeEmail(input.email()), 3);
         identity.requestPasswordReset(input.email());
         return Map.of("status", "REQUEST_ACCEPTED");
+    }
+
+    @GetMapping("/profile")
+    public IdentityService.Profile profile(Authentication authentication, HttpServletResponse response) {
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+        return identity.profile(accountId(authentication));
+    }
+
+    @PostMapping("/profile")
+    public Map<String, Object> updateProfile(@Valid @RequestBody ProfileUpdate input, Authentication authentication,
+            HttpServletRequest request, HttpServletResponse response) {
+        var account = identity.updateProfile(accountId(authentication), input.fullName(), input.phone());
+        // Preserve this session after updating updated_at; older sessions are invalidated as usual.
+        var auth = UsernamePasswordAuthenticationToken.authenticated(
+            new AccountIdentity.SessionUser(account.id(), account.updatedAt()), null, authentication.getAuthorities());
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
+        contexts.saveContext(context, request, response);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+        return Map.of("status", "PROFILE_UPDATED", "user", User.from(account));
+    }
+
+    private UUID accountId(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AccountIdentity user))
+            throw new IdentityException(401, "UNAUTHENTICATED", "Sign in to continue.");
+        return user.accountId();
     }
 
     @PostMapping("/password-reset/confirm")

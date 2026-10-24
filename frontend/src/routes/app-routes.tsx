@@ -6,6 +6,7 @@ import SeatSelection from "../features/booking/seat-selection";
 import TicketCheckout from "../features/payment/ticket-checkout";
 import AuthLayout from "../features/identity/auth-layout";
 import AuthPage from "../features/identity/auth-page";
+import AccountPage from "../features/identity/account-page";
 import ErrorPage from "../shared/error-page";
 import PageErrorBoundary from "../shared/page-error-boundary";
 
@@ -19,6 +20,7 @@ export default function AppRoutes() {
 			<Route path="movie-list" element={<MovieList />} />
 			<Route path="seat-selection" element={<SeatSelection />} />
 			<Route path="ticket-checkout" element={<TicketCheckout />} />
+			<Route path="account" element={<AccountPage />} />
 			<Route element={<AuthLayout />}>
 				<Route path="login" element={<AuthPage key="login" mode="login" />} />
 				<Route path="register" element={<AuthPage key="register" mode="register" />} />

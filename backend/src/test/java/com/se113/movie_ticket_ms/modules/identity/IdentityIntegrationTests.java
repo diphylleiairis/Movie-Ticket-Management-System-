@@ -357,6 +357,31 @@ class IdentityIntegrationTests {
         mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
     }
 
+    @Test void customerProfilePersistsAndKeepsTheCurrentSession() throws Exception {
+        var session = passwordSession();
+        var before = body(mvc.perform(get("/api/v1/identity/me").session(session)).andReturn()).get("user");
+        var changed = postJson("profile", Map.of("fullName", "Updated Customer", "phone", "+84 901234567"), session);
+        assertEquals(200, changed.getResponse().getStatus());
+        assertEquals("PROFILE_UPDATED", body(changed).get("status").asText());
+        var profile = mvc.perform(get("/api/v1/identity/profile").session(session)).andReturn();
+        assertEquals(200, profile.getResponse().getStatus());
+        assertEquals(before.get("id").asText(), body(profile).get("id").asText());
+        assertEquals(email, body(profile).get("email").asText());
+        assertEquals("Updated Customer", body(profile).get("fullName").asText());
+        assertEquals("+84 901234567", body(profile).get("phone").asText());
+        assertEquals("+84 901234567", jdbc.queryForObject("select phone from movie_app.users", String.class));
+        mvc.perform(post("/api/v1/identity/profile").session(session).contentType("application/json")
+            .content("{\"fullName\":\"Forged\"}")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/identity/profile")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/tickets/mine")).andExpect(status().isUnauthorized());
+        assertEquals(0, body(mvc.perform(get("/api/v1/tickets/mine").session(session)).andReturn()).get("tickets").size());
+        jdbc.update("update movie_app.users set role='CINEMA_STAFF'");
+        var staff = postJson("login", Map.of("email", email, "password", "Password123"), null);
+        var staffSession = (MockHttpSession) staff.getRequest().getSession();
+        mvc.perform(get("/api/v1/tickets/mine").session(staffSession)).andExpect(status().isForbidden());
+        assertEquals(403, postJson("profile", Map.of("fullName", "Staff", "phone", ""), staffSession).getResponse().getStatus());
+    }
+
     @Test void passwordResetIsOneTimeAndRevokesExistingSession() throws Exception {
         var session = passwordSession();
         identity.requestPasswordReset(email);
@@ -365,6 +390,30 @@ class IdentityIntegrationTests {
         assertThrows(RuntimeException.class, () -> identity.resetPassword(token, "AnotherPassword123"));
         assertThrows(RuntimeException.class, () -> identity.authenticate(email, "Password123"));
         assertTrue(identity.authenticate(email, "ChangedPassword123").active());
+        mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
+    }
+
+    @Test void googleCustomerCanCreateFirstPasswordWithoutLosingGoogleIdentity() throws Exception {
+        var googleLogin = callback(startGoogle(null, "register", "/"));
+        var session = (MockHttpSession) googleLogin.getRequest().getSession();
+        var account = identity.google(subject, email, "Google Customer", true, null);
+        assertNull(account.passwordHash());
+        assertThrows(RuntimeException.class, () -> identity.authenticate(email, "NewPassword123"));
+
+        var request = postJson("password-reset", Map.of("email", email), null);
+        assertEquals(200, request.getResponse().getStatus());
+        assertEquals("REQUEST_ACCEPTED", body(request).get("status").asText());
+        verify(mail).passwordReset(eq(email), anyString());
+        var token = sentReset;
+        assertNotNull(token);
+        var confirm = postJson("password-reset/confirm", Map.of("token", token, "password", "NewPassword123"), null);
+        assertEquals(200, confirm.getResponse().getStatus());
+        assertEquals("PASSWORD_RESET", body(confirm).get("status").asText());
+        assertEquals(account.id(), identity.authenticate(email, "NewPassword123").id());
+        assertEquals(account.id(), identity.google(subject, email, "Google Customer", true, null).id());
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.users", Integer.class));
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.user_identities", Integer.class));
+        assertThrows(RuntimeException.class, () -> identity.resetPassword(token, "AnotherPassword123"));
         mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
     }
 

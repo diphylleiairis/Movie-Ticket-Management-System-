@@ -168,6 +168,8 @@ Story-point estimates are relative: 1, 2, 3, 5, 8.
 - Given Google or Apple ID sign-in is configured, provider authentication is validated by the backend before an application session is created.
 
 ### ID-03 — Password reset
+- Owner decision (2026-10-20): requests for a missing account report that the account does not exist; accounts whose status is not `ACTIVE` are instructed to contact an administrator. Neither case issues a reset token or sends reset email.
+- Active Google-registered Customers without a password receive the same reset email at their current verified email. A valid reset creates a password on the existing Customer account while preserving Google sign-in, Bookings and Tickets.
 - The reset email includes a link to the frontend password form with its token already supplied; the customer enters and confirms a new password without copying a token. Opening the link does not consume it.
 - Given a registered customer requests password reset, when the request is accepted, then the reset process starts.
 - Given a valid reset token and new password are supplied, when reset is submitted, then the password is updated.
