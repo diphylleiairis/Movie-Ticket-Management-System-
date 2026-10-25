@@ -51,3 +51,7 @@ _Avoid_: available seats, remaining seat holds
 **Provider identity**:
 A link between an application account and its identity at an external sign-in provider, allowing later sign-ins to recover the same Customer.
 _Avoid_: separate social Customer, email-only account merge
+
+**Suspended account (`SUSPENSE`)**:
+An account temporarily blocked by Admin from signing in or continuing an existing session, while retaining its identity, Bookings and Tickets.
+_Avoid_: deleted Customer, cancelled Booking

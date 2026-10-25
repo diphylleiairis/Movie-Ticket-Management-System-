@@ -38,6 +38,7 @@ async function postIdentity(action: "login" | "logout" | "register" | "password-
 		});
 		const result = await readJson(response);
 		if (!response.ok) {
+			if (result.code === "ACCOUNT_SUSPENDED") throw new Error("This account is suspended. Please contact an administrator.");
 			if (action === "profile" && result.code === "INVALID_PROFILE" && typeof result.message === "string") throw new Error(result.message);
 			if (action === "profile" && response.status === 401) throw new Error("Your session has expired. Sign in again to save your profile.");
 			if (action === "password-reset" && result.code === "ACCOUNT_NOT_FOUND") throw new Error("This account does not exist.");

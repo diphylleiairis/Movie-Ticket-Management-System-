@@ -210,7 +210,7 @@ export default function MovieList() {
 				<header className="movie-list-header flex items-center justify-between gap-4 min-h-[78px] [border-bottom:1px_solid_#e6e0d6]
 					[&_>_span]:text-[color:var(--list-muted)] [&_>_span]:text-[12px] [&_>_span]:tracking-[0.16em]
 					max-[900px]:[&_>_span]:hidden max-[600px]:min-h-[58px]">
-					<a href="/" className="movie-list-back">
+					<a href="/" className="movie-list-back rounded-md border border-solid border-[#cbb89f] bg-[#fffdf9] px-4 py-2.5 no-underline transition-colors hover:border-[#a46a34] hover:bg-[#f1e6d4]">
 						<ArrowLeft size={15} aria-hidden="true" /> Cinema Discovery
 					</a>
 					<span>THE FILM COLLECTION</span>

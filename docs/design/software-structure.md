@@ -79,11 +79,34 @@ The React frontend uses Tailwind CSS 4 with the `@tailwindcss/vite` plugin. Comp
 
 React Router provides browser routing. `frontend/src/routes/app-routes.tsx` defines page routes, and `frontend/src/main.tsx` mounts them inside `BrowserRouter`. Identity owns a shared account layout with nested login, registration, and password-reset routes rendered through `<Outlet />`. Internal account links use React Router `Link` to preserve the layout during navigation. Deployment must serve the frontend entry document for direct browser requests to frontend page routes while keeping `/api/v1/` requests routed to the backend.
 
-Frontend recovery screens live in `frontend/src/shared/`. Unknown page URLs render a 404 screen; `/error/:status` supports 400–599 with the supplied cinema-stage background for 4xx and maintenance background for 5xx. `/404` and `/500` are direct preview routes. A route-scoped React error boundary renders the 500 screen for rendering failures and resets on navigation. These are frontend screens; they do not set the HTTP status returned by the hosting server or replace endpoint-specific form validation.
+Frontend recovery screens live in `frontend/src/shared/`. Unknown page URLs render a 404 screen; `/error/:status` supports 400–599 with the supplied cinema-stage background for 4xx and maintenance background for 5xx. `/404` and `/500` are direct preview routes. A React error boundary renders the 500 screen for rendering failures and resets its error state on navigation while preserving layouts during normal route changes. These are frontend screens; they do not set the HTTP status returned by the hosting server or replace endpoint-specific form validation.
 
 Opening showtimes without a Movie, seats without a valid Showtime, or checkout without a valid seat selection displays a booking recovery card with the required next step. It preserves a valid Movie and Showtime when linking back, removes invalid seat selections, and never creates a Seat Hold or Payment Attempt. An unknown Movie on the showtime page renders 404.
 
 ## Backend module structure
+
+The ADMIN-only workspace retains its original sidebar with Overview, Movie, User
+and Booking. `/admin` and `/admin/dashboard` show Overview; `/admin/movies`,
+`/admin/users` and `/admin/bookings` render child pages through the shared layout's `<Outlet />`.
+Section links preserve the sidebar/header without reloading the document.
+An account-scoped in-memory store prefetches default Overview/Movie/User/Booking responses
+after authorization, shares pending reads and revalidates cached views in the
+background. It clears on leaving Admin or API access denial, and patches cached
+account status after successful updates. See the Admin design for limits.
+Identity owns account listing and status changes; Booking composes the all-date
+Booking list through Identity, Catalog and Scheduling application contracts.
+All `/api/v1/admin/**` endpoints require server-side ADMIN authorization and mutations
+require CSRF. Overview uses `/api/v1/admin/dashboard`.
+See [Admin workspace](admin-dashboard.md) for contracts, migration and verification.
+Catalog owns the Movie list/create endpoint `/api/v1/admin/movies` and the child
+page `/admin/movies`. Creation is ADMIN-only, CSRF-protected, uses existing V1
+Catalog tables and invalidates the frontend Movie/report cache.
+See [Admin Movie creation](admin-movies.md).
+Catalog also owns ADMIN/CSRF-protected multipart poster uploads at
+`/api/v1/admin/movies/posters`. `MoviePosters.Storage` separates validation from the
+Supabase Storage adapter; elevated Storage keys remain in the backend. Uploaded
+public URLs use the existing Movie poster field, while arbitrary external poster
+URLs remain supported. See [ADR 0007](../adr/0007-catalog-poster-storage.md).
 
 Each business module follows the same internal structure:
 

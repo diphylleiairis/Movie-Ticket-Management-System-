@@ -7,13 +7,17 @@ import TicketCheckout from "../features/payment/ticket-checkout";
 import AuthLayout from "../features/identity/auth-layout";
 import AuthPage from "../features/identity/auth-page";
 import AccountPage from "../features/identity/account-page";
+import AdminRoute from "../features/identity/admin-route";
+import { AdminOverviewPanel } from "../features/admin/admin-dashboard";
+import { AdminUsersPanel, AdminBookingsPanel } from "../features/admin/admin-workspace";
+import AdminMoviesPanel from "../features/admin/admin-movies";
 import ErrorPage from "../shared/error-page";
 import PageErrorBoundary from "../shared/page-error-boundary";
 
 export default function AppRoutes() {
 	const location = useLocation();
 	return (
-		<PageErrorBoundary key={location.pathname + location.search}>
+		<PageErrorBoundary resetKey={location.pathname + location.search}>
 		<Routes>
 			<Route path="/" element={<Page />} />
 			<Route path="movie-showtime" element={<MovieShowtime />} />
@@ -21,6 +25,13 @@ export default function AppRoutes() {
 			<Route path="seat-selection" element={<SeatSelection />} />
 			<Route path="ticket-checkout" element={<TicketCheckout />} />
 			<Route path="account" element={<AccountPage />} />
+			<Route path="admin" element={<AdminRoute />}>
+				<Route index element={<AdminOverviewPanel />} />
+				<Route path="dashboard" element={<AdminOverviewPanel />} />
+				<Route path="users" element={<AdminUsersPanel />} />
+				<Route path="bookings" element={<AdminBookingsPanel />} />
+				<Route path="movies" element={<AdminMoviesPanel />} />
+			</Route>
 			<Route element={<AuthLayout />}>
 				<Route path="login" element={<AuthPage key="login" mode="login" />} />
 				<Route path="register" element={<AuthPage key="register" mode="register" />} />

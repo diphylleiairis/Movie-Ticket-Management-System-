@@ -153,8 +153,8 @@ export default function SeatSelection() {
 						[@media(min-width:_1001px)_and_(max-height:_800px)]:m-[10px_0_12px]
 						[@media(min-width:_1001px)_and_(max-height:_800px)]:text-[11px]
 						[@media(min-width:_1001px)_and_(max-height:_800px)]:leading-[1.5]" id="seat-selection-hint">{selectedSeats.length ? "Demo preview: selecting seats does not reserve them." : "Choose at least one available seat to continue."}</p>
-					<a className="seat-selection-back inline-flex items-center gap-[7px] text-[#77716a] text-[12px] no-underline
-						hover:text-[#111] hover:underline hover:underline-offset-[3px]" href={showtimeHref}><ArrowLeft size={14} aria-hidden="true" />Change showtime</a>
+					<a className="seat-selection-back inline-flex items-center gap-[7px] rounded-md border border-solid border-[#cbb89f] bg-[#fffdf9] px-4 py-2.5 text-[#77716a] text-[12px] no-underline
+						transition-colors hover:border-[#a46a34] hover:bg-[#f1e6d4] hover:text-[#a46a34]" href={showtimeHref}><ArrowLeft size={14} aria-hidden="true" />Change showtime</a>
 				</aside>
 			</main>
 		</div>

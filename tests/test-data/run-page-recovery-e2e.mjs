@@ -17,7 +17,8 @@ try {
   console.log(`Page-recovery frontend ready at ${process.env.FRONTEND_URL}`);
   cafe = await createTestCafe({ hostname: '127.0.0.1' });
   const failures = await cafe.createRunner()
-    .src(['page-recovery', 'account'].map(name => fileURLToPath(new URL(`../e2e/testcafe/${name}.test.js`, import.meta.url))))
+    .src((process.env.PAGE_TEST_SUITES?.split(',') || ['page-recovery', 'account', 'account-session', 'admin-dashboard', 'admin-movies']).map(name => fileURLToPath(new URL(`../e2e/testcafe/${name}.test.js`, import.meta.url))))
+    .filter(testName => !process.env.PAGE_TEST_NAME || testName.includes(process.env.PAGE_TEST_NAME))
     .browsers(process.env.PAGE_TEST_BROWSER || 'chrome:headless').reporter('spec')
     .screenshots({
       path: fileURLToPath(new URL('../../artifacts/page-recovery-e2e/', import.meta.url)),

@@ -20,3 +20,13 @@ Chrome profile left by a previous run cannot intercept the next browser launch.
 For custom CLI arguments, use `node tests/test-data/run-testcafe.mjs` instead of
 calling `testcafe.cmd` directly. Full commands and troubleshooting are in
 [Running tests](../../../docs/setup/running-tests.md).
+
+The page runner also includes account and Admin Movie/User/Booking UI suites with mocked
+APIs. To run only Admin management, set `$env:PAGE_TEST_SUITES = 'admin-dashboard'`
+before `npm.cmd run test:e2e:pages`, then remove the variable afterwards. See
+[Admin dashboard](../../../docs/design/admin-dashboard.md) for the separate
+backend authorization checks, suspension rules and required V2 migration.
+
+For Movie creation and catalog validation, set `PAGE_TEST_SUITES=admin-movies`;
+see [Admin Movie design](../../../docs/design/admin-movies.md). This suite mocks
+API writes, verifies role protection and does not create movies in Supabase.

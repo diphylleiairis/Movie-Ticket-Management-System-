@@ -8,6 +8,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,8 @@ public class IdentityService {
         boolean matches = passwords.matches(acceptable ? password : "invalid-password", hash);
         if (!acceptable || !matches || account == null || account.passwordHash() == null || "DISABLED".equals(account.status()))
             throw new IdentityException(401, "INVALID_CREDENTIALS", "The email or password is incorrect.");
+        if ("SUSPENSE".equals(account.status()))
+            throw new IdentityException(403, "ACCOUNT_SUSPENDED", "This account is suspended. Please contact an administrator.");
         if (!account.active()) throw new IdentityException(403, "EMAIL_NOT_VERIFIED", "Verify your email before signing in.");
         return account;
     }
@@ -150,8 +153,8 @@ public class IdentityService {
     @Transactional
     public Account updateProfile(UUID id, String fullName, String phone) {
         var account = current(id);
-        if (!"CUSTOMER".equals(account.role()))
-            throw new IdentityException(403, "ACCESS_DENIED", "Only Customers may edit their personal profile.");
+        if (!Set.of("CUSTOMER", "ADMIN", "CINEMA_STAFF").contains(account.role()))
+            throw new IdentityException(403, "ACCESS_DENIED", "This account cannot edit its personal profile.");
         if (fullName == null || fullName.isBlank() || fullName.strip().length() > 150)
             throw new IdentityException(400, "INVALID_PROFILE", "Enter a name of up to 150 characters.");
         phone = phone == null || phone.isBlank() ? null : phone.strip();
@@ -169,7 +172,7 @@ public class IdentityService {
         if (!"ACTIVE".equals(account.status()))
             throw new IdentityException(403, "ACCOUNT_UNAVAILABLE", "This account is not active. Please contact an administrator.");
         // Verified Customers may create their first password through the same reset flow.
-        if (!account.active() || !"CUSTOMER".equals(account.role())) return;
+        if (!canResetPassword(account)) return;
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
@@ -185,9 +188,14 @@ public class IdentityService {
         var account = accounts.byId(reset.userId()).orElseThrow(IdentityService::invalidReset);
         reset = accounts.reset(hash).orElseThrow(IdentityService::invalidReset);
         var now = accounts.now();
-        if (reset.consumed() || !now.isBefore(reset.expiresAt()) || !account.active()
-                || !account.email().equals(reset.email()) || !"CUSTOMER".equals(account.role())) throw invalidReset();
+        if (reset.consumed() || !now.isBefore(reset.expiresAt()) || !canResetPassword(account)
+                || !account.email().equals(reset.email())) throw invalidReset();
         accounts.changePassword(account.id(), passwords.encode(password), now);
+    }
+
+    private static boolean canResetPassword(Account account) {
+        return account.active() && account.emailVerifiedAt() != null
+            && Set.of("CUSTOMER", "ADMIN").contains(account.role());
     }
 
     private static String tokenHash(String token) {

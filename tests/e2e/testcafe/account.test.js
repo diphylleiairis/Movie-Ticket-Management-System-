@@ -1,4 +1,4 @@
-import { ClientFunction, RequestMock, Selector } from 'testcafe';
+import { ClientFunction, RequestLogger, RequestMock, Selector } from 'testcafe';
 
 const base = process.env.FRONTEND_URL || 'http://127.0.0.1:5173';
 const user = { id: 'customer-1', email: 'customer@example.test', fullName: 'Cinema Lover', role: 'CUSTOMER', phone: '0901234567' };
@@ -55,3 +55,74 @@ test.requestHooks(anonymous)('Opening account without a session returns to sign-
   await t.removeRequestHooks(mock).navigateTo(`${base}/account`)
     .expect(ClientFunction(() => location.pathname)()).eql('/login');
 });
+
+for (const role of ['ADMIN', 'CINEMA_STAFF']) {
+  const member = { ...user, id: `member-${role}`, fullName: `${role} Member`, role };
+  const updated = { ...member, fullName: 'Updated team member', phone: '+84 901234567' };
+  let saved = false;
+  const roleMock = RequestMock()
+    .onRequestTo(/\/api\/v1\/identity\/me$/).respond((_request, response) => {
+      response.setBody(JSON.stringify({ status: 'AUTHENTICATED', user: saved ? updated : member }));
+    }, 200, headers)
+    .onRequestTo({ url: /\/api\/v1\/identity\/profile$/, method: 'get' }).respond(member, 200, headers)
+    .onRequestTo(/\/api\/v1\/identity\/csrf$/).respond({ token: 'test-csrf' }, 200, headers)
+    .onRequestTo({ url: /\/api\/v1\/identity\/profile$/, method: 'post' }).respond((_request, response) => {
+      saved = true;
+      response.setBody(JSON.stringify({ status: 'PROFILE_UPDATED', user: updated }));
+    }, 200, headers)
+    .onRequestTo(/\/api\/v1\/admin\//).respond({ message: 'Report unavailable in this menu test.' }, 503, headers);
+  const ticketRequests = RequestLogger(/\/api\/v1\/tickets\/mine$/);
+  const profileWrites = RequestLogger({ url: /\/api\/v1\/identity\/profile$/, method: 'post' }, { logRequestBody: true, logRequestHeaders: true });
+
+  test.requestHooks(roleMock, ticketRequests, profileWrites)(`${role} dropdown offers own profile and role dashboard; profile edits save`, async t => {
+    saved = false;
+    ticketRequests.clear();
+    profileWrites.clear();
+    const trigger = Selector('button').withAttribute('aria-label', `Account: ${member.fullName}`);
+    const options = Selector('nav[aria-label="Account options"]');
+    await t.removeRequestHooks(mock).resizeWindow(1440, 1000).navigateTo(base)
+      .click(trigger).expect(options.visible).ok()
+      .expect(options.find('a[href="/account"]').innerText).contains('Edit profile');
+    if (role === 'ADMIN') {
+      await t.expect(options.find('a[href="/admin"]').innerText).contains('Admin dashboard');
+    } else {
+      await t.expect(options.find('a[href="/admin"]').exists).notOk()
+        .expect(options.find('button').withText('Staff dashboard').hasAttribute('disabled')).ok()
+        .expect(options.innerText).contains('Coming soon');
+    }
+    await t.pressKey('esc').expect(options.exists).notOk()
+      .expect(trigger.focused).ok()
+      .pressKey('enter').expect(options.visible).ok()
+      .click('header', { offsetX: 10, offsetY: 10 }).expect(options.exists).notOk()
+      .click(trigger).expect(options.visible).ok();
+    await ClientFunction(() => document.querySelector('header .brand').focus())();
+    await t.expect(options.exists).notOk()
+      .resizeWindow(375, 812).click(trigger).expect(options.visible).ok()
+      .expect(ClientFunction(() => {
+        const bounds = document.querySelector('nav[aria-label="Account options"]').getBoundingClientRect();
+        return bounds.left >= 0 && bounds.right <= innerWidth;
+      })()).ok().takeScreenshot(`${role.toLowerCase()}-account-menu-mobile.png`)
+      .click(options.find('a[href="/account"]'))
+      .expect(ClientFunction(() => location.pathname)()).eql('/account')
+      .expect(options.exists).notOk()
+      .expect(Selector('#tickets-title').exists).notOk()
+      .expect(Selector('#profile-name').hasAttribute('disabled')).notOk()
+      .expect(Selector('#profile-email').hasAttribute('readonly')).ok()
+      .typeText('#profile-name', updated.fullName, { replace: true })
+      .typeText('#profile-phone', updated.phone, { replace: true })
+      .click(Selector('button').withText('SAVE CHANGES'))
+      .expect(Selector('[role="status"]').withText('has been saved').exists).ok()
+      .expect(profileWrites.count(() => true)).eql(1)
+      .expect(profileWrites.contains(record => record.request.headers['x-csrf-token'] === 'test-csrf')).ok()
+      .expect(ClientFunction(() => document.querySelector('.account-page').scrollWidth <= innerWidth)()).ok()
+      .expect(ticketRequests.count(() => true)).eql(0);
+    const body = JSON.parse(profileWrites.requests[0].request.body.toString());
+    await t.expect(body).eql({ fullName: updated.fullName, phone: updated.phone });
+    if (role === 'ADMIN') {
+      await t.click(Selector('button[aria-label="Account: Updated team member"]'))
+        .click(options.find('a[href="/admin"]'))
+        .expect(ClientFunction(() => location.pathname)()).eql('/admin')
+        .expect(Selector('aside[aria-label="Admin navigation"]').exists).ok();
+    }
+  });
+}

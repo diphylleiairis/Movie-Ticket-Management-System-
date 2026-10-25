@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -17,20 +19,38 @@ class IdentityProfileTests {
     final UUID id = UUID.randomUUID();
     Account account(String role) { return new Account(id, "customer@example.com", null, "Customer", role, "ACTIVE", Instant.EPOCH, Instant.EPOCH); }
 
-    @Test void updatesOnlyTheAuthenticatedCustomerAndNormalizesFields() {
-        when(repository.byId(id)).thenReturn(Optional.of(account("CUSTOMER")));
-        when(repository.updateProfile(id, "New name", "+84 901234567")).thenReturn(account("CUSTOMER"));
-        identity.updateProfile(id, "  New name  ", "  +84 901234567  ");
+    @ParameterizedTest @ValueSource(strings = {"CUSTOMER", "ADMIN", "CINEMA_STAFF"})
+    void updatesOnlyTheAuthenticatedAccountAndNormalizesFields(String role) {
+        when(repository.byId(id)).thenReturn(Optional.of(account(role)));
+        when(repository.updateProfile(id, "New name", "+84 901234567")).thenReturn(account(role));
+        var updated = identity.updateProfile(id, "  New name  ", "  +84 901234567  ");
+        assertEquals(id, updated.id());
+        assertEquals(role, updated.role());
+        assertEquals("customer@example.com", updated.email());
         verify(repository).updateProfile(id, "New name", "+84 901234567");
         verify(repository, never()).changePassword(any(), any(), any());
     }
 
-    @Test void invalidNameOrPhoneDoesNotWriteAndStaffCannotEdit() {
-        when(repository.byId(id)).thenReturn(Optional.of(account("CUSTOMER")));
+    @ParameterizedTest @ValueSource(strings = {"CUSTOMER", "ADMIN", "CINEMA_STAFF"})
+    void invalidNameOrPhoneDoesNotWrite(String role) {
+        when(repository.byId(id)).thenReturn(Optional.of(account(role)));
         assertThrows(IdentityException.class, () -> identity.updateProfile(id, " ", ""));
         assertThrows(IdentityException.class, () -> identity.updateProfile(id, "Customer", "not-a-phone"));
-        when(repository.byId(id)).thenReturn(Optional.of(account("CINEMA_STAFF")));
+        assertThrows(IdentityException.class, () -> identity.updateProfile(id, "x".repeat(151), ""));
+        verify(repository, never()).updateProfile(any(), any(), any());
+    }
+
+    @Test void unknownRoleCannotEdit() {
+        when(repository.byId(id)).thenReturn(Optional.of(account("UNKNOWN")));
         assertEquals(403, assertThrows(IdentityException.class, () -> identity.updateProfile(id, "Customer", "")).status());
+        verify(repository, never()).updateProfile(any(), any(), any());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"CUSTOMER", "ADMIN", "CINEMA_STAFF"})
+    void suspendedAccountsCannotEdit(String role) {
+        when(repository.byId(id)).thenReturn(Optional.of(new Account(id, "customer@example.com", null,
+            "Account", role, "SUSPENSE", Instant.EPOCH, Instant.EPOCH)));
+        assertEquals(401, assertThrows(IdentityException.class, () -> identity.updateProfile(id, "Changed", "")).status());
         verify(repository, never()).updateProfile(any(), any(), any());
     }
 }

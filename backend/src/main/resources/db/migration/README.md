@@ -4,6 +4,11 @@
 
 ## Run on Supabase
 
+For existing V1 databases, apply [V2__account_suspense_status.sql](V2__account_suspense_status.sql)
+once before deploying Admin status updates. It adds `SUSPENSE` to the permitted
+account states and preserves all existing account rows and email-verification checks.
+For a new database, run V1 followed by V2. Neither migration is applied by startup.
+
 Open the intended project's SQL Editor, paste the complete migration and run it once on a database that has no `movie_app` schema. The script uses a transaction and never drops existing application tables. Re-running it fails deliberately instead of masking drift. `btree_gist` is required for the Hall scheduling exclusion constraint; the script enables it if absent and includes `extensions` and `public` in the creation search path for existing extension installations.
 
 When Flyway is enabled in Spring Boot, use this same migration as the source of truth. If SQL Editor has already applied V1, explicitly baseline Flyway at version 1 after checking that the schema matches; do not execute V1 again. Flyway is not yet a dependency in `backend/pom.xml`.

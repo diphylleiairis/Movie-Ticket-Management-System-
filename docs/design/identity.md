@@ -151,8 +151,20 @@ existing Customer account. The Google provider link and Customer ID stay intact,
 so both Google and email/password sign-in work afterward. The email goes only to
 the current verified account email. Missing accounts return `ACCOUNT_NOT_FOUND`;
 accounts whose status is not `ACTIVE` return `ACCOUNT_UNAVAILABLE` and must contact
-an administrator (owner decision, 2026-10-20). Active unverified and non-Customer
-accounts remain ineligible and receive `REQUEST_ACCEPTED` without a reset email.
+an administrator (owner decision, 2026-10-20). Owner decision (2026-10-25): an
+ACTIVE Admin with a verified email may use the same reset flow. The request and
+confirmation both enforce that eligibility; the account ID and Admin role remain
+unchanged. Unverified accounts and Cinema Staff remain ineligible and receive
+`REQUEST_ACCEPTED` without a reset email. An Admin must have `email_verified_at`
+recorded during trusted provisioning; the application does not mark it verified
+merely to allow a reset.
+
+If a local Admin reset reports success but there is no Resend request, first check
+the account's role, ACTIVE status and verified-email marker. The previous backend
+accepted Admin requests without creating a token or calling the mail provider.
+After updating backend source, rebuild the local image with
+`docker compose up -d --build backend`; restarting an old image does not include
+the fix. Customer/Admin resets share the configured Resend sender and template.
 
 Both Resend and SMTP reset emails contain a clickable link built from the backend's
 trusted `identity.frontend-url`: `/reset-password#token=<opaque-token>`.

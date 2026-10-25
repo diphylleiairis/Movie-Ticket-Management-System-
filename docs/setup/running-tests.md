@@ -87,7 +87,7 @@ npm.cmd run test:e2e:identity
 Use `Remove-Item Env:IDENTITY_TEST_BROWSER -ErrorAction SilentlyContinue` to return
 to the default. Logs and failure screenshots are in `artifacts/identity-e2e/`.
 
-### Page recovery: six workflows
+### Page recovery, account and admin dashboard: twenty workflows
 
 Run directly, without starting Vite separately:
 
@@ -97,6 +97,12 @@ npm.cmd run test:e2e:pages
 
 These tests cover 404, 4xx/5xx backgrounds, missing booking steps, preserved Movie
 selection, invalid checkout seats and mobile recovery. No database is required.
+The runner also checks customer account workflows and the ADMIN-only dashboard,
+including direct-URL denial for other roles, session recovery, charts, search,
+period changes, CSV export and mobile navigation. These UI suites mock their APIs;
+dashboard server authorization is tested separately as described in
+[Admin dashboard](../design/admin-dashboard.md). Set `PAGE_TEST_SUITES` to a
+comma-separated subset of `page-recovery,account,admin-dashboard` to select suites.
 The runner starts its own Vite server on an available loopback port, sets the
 test target to that server, and closes it after the tests. It does not use a
 frontend URL inherited from another terminal or depend on port 5173 being free.

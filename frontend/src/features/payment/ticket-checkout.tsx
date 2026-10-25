@@ -242,8 +242,8 @@ export default function TicketCheckout() {
 								<LockKeyhole size={17} aria-hidden="true" />
 							</div>
 						</form>
-						<a className="checkout-back inline-flex items-center gap-[7px] mt-[22px] text-[#77716a] text-[13px] no-underline
-							hover:text-[#171717] hover:underline hover:underline-offset-[3px]" href={seatSelectionHref}>
+						<a className="checkout-back inline-flex items-center gap-[7px] mt-[22px] rounded-md border border-solid border-[#cbb89f] bg-[#fffdf9] px-4 py-2.5 text-[#77716a] text-[13px] no-underline
+							transition-colors hover:border-[#a46a34] hover:bg-[#f1e6d4] hover:text-[#a46a34]" href={seatSelectionHref}>
 							<ArrowLeft size={15} aria-hidden="true" />
 							Back to seat selection
 						</a>
