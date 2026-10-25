@@ -121,6 +121,13 @@ Frontend trên Vercel dùng [rewrite](frontend/vercel.json) để chuyển API v
 
 File `.env` local không được đưa vào image hoặc Git deployment; cần đặt biến môi trường trực tiếp trên Render/Vercel. Session backend hiện lưu trong bộ nhớ của một instance, nên người dùng cần đăng nhập lại sau khi backend restart hoặc redeploy.
 
+Nếu Render báo `EMAXCONNSESSION` rồi lỗi Hibernate Dialect, pool kết nối Supabase
+đã đầy. Đặt `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=3`,
+`SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0`,
+`SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=60000` trên Render và redeploy.
+Local Docker dùng cùng mặc định; chạy `docker compose up -d backend` để áp dụng.
+Xem [ngân sách kết nối](docs/design/identity.md#database-connection-budget).
+
 ## Kiểm thử
 
 ### Chạy nhanh TestCafe

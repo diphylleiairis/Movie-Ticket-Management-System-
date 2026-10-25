@@ -170,6 +170,10 @@ settings through public application contracts; see [Customer account](customer-a
 ## Runtime environments
 
 Development, testing, and production use separate configuration profiles. Secrets and provider credentials are supplied through environment variables and are never committed.
+Backend instances default to a Hikari pool of at most three connections, zero
+minimum idle and a 60-second idle timeout to share the project's limited Supabase
+session pool. Native Spring environment overrides remain supported. See the
+[connection budget and Render recovery instructions](identity.md#database-connection-budget).
 
 For local development, the Spring Boot dotenv integration may read the ignored repository-root `.env` file. Deployed environments supply real environment variables, which take precedence over `.env` values.
 
