@@ -22,6 +22,8 @@
 | ID-T18 | ID-01/02 | Default Google endpoint works without frontend env override; registration requires terms, creates Customer and later sign-in restores same Customer | TestCafe |
 | ID-T19 | ID-01/02/03 | Active Google Customer without password receives reset email; valid token creates first password; Google and password sign-in resolve the same Customer; token remains one-time and prior sessions are revoked | Integration + TestCafe |
 | ID-T20 | ID-03 | Missing reset account returns `404 ACCOUNT_NOT_FOUND`; non-`ACTIVE` status returns `403 ACCOUNT_UNAVAILABLE` with administrator contact guidance; neither creates a token nor sends reset email | Unit |
+| ID-T21 | ID-03 | Resend reset uses published alias `password-reset` with the trusted frontend reset link in `RESET_URL` and stored account name in `USER_NAME`, without inline text/HTML; template rejection reports delivery unavailable without retrying | Resend adapter + Unit |
+| ID-T22 | ID-03 | ACTIVE Admin with verified email receives and redeems reset link; same ID/role retained and prior sessions revoked. Unverified/inactive Admin and Cinema Staff cannot reset. Expired, consumed and old-email tokens are rejected | Unit + Integration |
 
 Automated integration tests use only the dedicated loopback `identity_tests` database.
 Browser tests use deterministic local OIDC/Resend fixtures; real Google consent and

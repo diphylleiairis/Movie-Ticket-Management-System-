@@ -232,14 +232,15 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 				if (!active.current) return;
 				setCompleted(true);
 			} else {
-				await signIn(email.trim(), password, rememberMe);
+				const result = await signIn(email.trim(), password, rememberMe);
 				if (!active.current) return;
 				setPassword("");
 				if (searchParams.get("oauthError") === "ACCOUNT_LINK_REQUIRED") {
 					startSocialAuth("google", "link", returnTo);
 					return;
 				}
-				navigate(returnTo, { replace: true });
+				const role = result.user && typeof result.user === "object" && "role" in result.user ? result.user.role : null;
+				navigate(role === "ADMIN" && returnTo === "/" ? "/admin" : returnTo, { replace: true });
 			}
 		} catch (failure) {
 			if (!active.current) return;

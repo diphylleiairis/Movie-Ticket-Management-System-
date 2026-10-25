@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
@@ -134,6 +135,9 @@ class IdentityIntegrationTests {
             String sql = new ClassPathResource("db/migration/V1__movie_ticket_schema.sql").getContentAsString(StandardCharsets.UTF_8);
             jdbc.execute(sql);
         }
+        var constraint = jdbc.queryForObject("select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'movie_app.users'::regclass and conname = 'users_status_check'", String.class);
+        if (!constraint.contains("SUSPENSE"))
+            jdbc.execute(new ClassPathResource("db/migration/V2__account_suspense_status.sql").getContentAsString(StandardCharsets.UTF_8));
     }
 
     @BeforeEach
@@ -143,7 +147,7 @@ class IdentityIntegrationTests {
         verified = true; includeVerification = true; audience = "test-client"; issuer = "https://accounts.google.com"; wrongSignature = false;
         reset(mail);
         doAnswer(call -> { sentCode = call.getArgument(1); return null; }).when(mail).verification(anyString(), anyString());
-        doAnswer(call -> { sentReset = call.getArgument(1); return null; }).when(mail).passwordReset(anyString(), anyString());
+        doAnswer(call -> { sentReset = call.getArgument(1); return null; }).when(mail).passwordReset(anyString(), anyString(), anyString());
     }
 
     @AfterAll static void stopGoogle() { GOOGLE.stop(0); }
@@ -170,6 +174,82 @@ class IdentityIntegrationTests {
         var login = postJson("login", Map.of("email", email, "password", "Password123", "rememberMe", true), null);
         assertEquals(200, login.getResponse().getStatus());
         return (MockHttpSession) login.getRequest().getSession();
+    }
+
+    @Test void adminMovieCreationPersistsGenresAndRejectsDuplicateOrInvalidRequests() throws Exception {
+        var customerSession = passwordSession();
+        String slug = "test-movie-" + UUID.randomUUID(), genre = "Drama " + UUID.randomUUID();
+        var payload = Map.of("title", "Test movie", "slug", slug, "description", "A new film.", "durationMinutes", 125,
+            "ageRating", "T13", "posterUrl", "https://cinema.example.test/poster.jpg", "releaseDate", "2026-10-24", "genres", List.of(genre, genre));
+        try {
+            var token = csrf(customerSession);
+            mvc.perform(post("/api/v1/admin/movies").session(token.session()).header("X-CSRF-TOKEN", token.value())
+                .contentType("application/json").content(JSON.writeValueAsString(payload))).andExpect(status().isForbidden());
+            assertEquals(0, jdbc.queryForObject("select count(*) from movie_app.movies where slug = ?", Integer.class, slug));
+            jdbc.update("update movie_app.users set role = 'ADMIN' where email = ?", email);
+            var login = postJson("login", Map.of("email", email, "password", "Password123", "rememberMe", false), null);
+            var session = (MockHttpSession) login.getRequest().getSession();
+            token = csrf(session);
+            mvc.perform(post("/api/v1/admin/movies").session(token.session()).header("X-CSRF-TOKEN", token.value())
+                .contentType("application/json").content(JSON.writeValueAsString(payload))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("ACTIVE")).andExpect(jsonPath("$.durationMinutes").value(125))
+                .andExpect(jsonPath("$.releaseDate").value("2026-10-24")).andExpect(jsonPath("$.genres.length()").value(1));
+            mvc.perform(get("/api/v1/admin/movies").session(session).param("q", slug)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1)).andExpect(jsonPath("$.items[0].slug").value(slug));
+            mvc.perform(post("/api/v1/admin/movies").session(token.session()).header("X-CSRF-TOKEN", token.value())
+                .contentType("application/json").content(JSON.writeValueAsString(payload))).andExpect(status().isConflict());
+            assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.movies where slug = ?", Integer.class, slug));
+            var second = new java.util.HashMap<String, Object>(payload); second.put("slug", slug + "-second");
+            mvc.perform(post("/api/v1/admin/movies").session(token.session()).header("X-CSRF-TOKEN", token.value())
+                .contentType("application/json").content(JSON.writeValueAsString(second))).andExpect(status().isCreated());
+            assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.genres where name = ?", Integer.class, genre));
+            second.put("slug", slug + "-invalid"); second.put("durationMinutes", 1.5);
+            mvc.perform(post("/api/v1/admin/movies").session(token.session()).header("X-CSRF-TOKEN", token.value())
+                .contentType("application/json").content(JSON.writeValueAsString(second))).andExpect(status().isBadRequest());
+            assertEquals(0, jdbc.queryForObject("select count(*) from movie_app.movies where slug = ?", Integer.class, slug + "-invalid"));
+        } finally {
+            jdbc.update("delete from movie_app.movie_genres where movie_id in (select id from movie_app.movies where slug like ?)", slug + "%");
+            jdbc.update("delete from movie_app.movies where slug like ?", slug + "%");
+            jdbc.update("delete from movie_app.genres where name = ?", genre);
+        }
+    }
+
+    @Test void adminSuspensionPersistsAndBlocksPasswordGoogleAndOldSessionsUntilFreshSignIn() throws Exception {
+        var customerSession = passwordSession();
+        var customer = identity.authenticate(email, "Password123");
+        identity.google(subject, email, "Customer", true, customer.id());
+        var secondLogin = postJson("login", Map.of("email", email, "password", "Password123", "rememberMe", false), null);
+        var secondSession = (MockHttpSession) secondLogin.getRequest().getSession();
+
+        String adminEmail = UUID.randomUUID() + "@example.test";
+        UUID challenge = identity.register("Admin", adminEmail, "Password123");
+        identity.verify(challenge, sentCode);
+        jdbc.update("update movie_app.users set role = 'ADMIN' where email = ?", adminEmail);
+        var adminLogin = postJson("login", Map.of("email", adminEmail, "password", "Password123", "rememberMe", false), null);
+        var adminSession = (MockHttpSession) adminLogin.getRequest().getSession();
+
+        mvc.perform(get("/api/v1/admin/bookings").session(adminSession)).andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+        var token = csrf(adminSession);
+        mvc.perform(post("/api/v1/admin/users/" + customer.id() + "/status").session(token.session())
+            .header("X-CSRF-TOKEN", token.value()).contentType("application/json").content("{\"status\":\"SUSPENSE\"}"))
+            .andExpect(status().isOk());
+        assertEquals("SUSPENSE", jdbc.queryForObject("select status from movie_app.users where id = ?", String.class, customer.id()));
+        assertEquals("ACCOUNT_SUSPENDED", assertThrows(com.se113.movie_ticket_ms.modules.identity.application.IdentityException.class,
+            () -> identity.authenticate(email, "Password123")).code());
+        assertThrows(RuntimeException.class, () -> identity.google(subject, email, "Customer", true, null));
+        mvc.perform(get("/api/v1/identity/me").session(customerSession)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/users").param("q", email).session(adminSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.total").value(1)).andExpect(jsonPath("$.items[0].status").value("SUSPENSE"))
+            .andExpect(jsonPath("$.items[0].passwordHash").doesNotExist());
+
+        token = csrf(adminSession);
+        mvc.perform(post("/api/v1/admin/users/" + customer.id() + "/status").session(token.session())
+            .header("X-CSRF-TOKEN", token.value()).contentType("application/json").content("{\"status\":\"ACTIVE\"}"))
+            .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/identity/me").session(secondSession)).andExpect(status().isUnauthorized());
+        assertEquals(customer.id(), identity.authenticate(email, "Password123").id());
+        assertEquals(customer.id(), identity.google(subject, email, "Customer", true, null).id());
+        assertEquals(1, jdbc.queryForObject("select count(*) from movie_app.user_identities where user_id = ?", Integer.class, customer.id()));
     }
 
     private MvcResult startGoogle(MockHttpSession session, String intent, String returnTo) throws Exception {
@@ -379,17 +459,46 @@ class IdentityIntegrationTests {
         var staff = postJson("login", Map.of("email", email, "password", "Password123"), null);
         var staffSession = (MockHttpSession) staff.getRequest().getSession();
         mvc.perform(get("/api/v1/tickets/mine").session(staffSession)).andExpect(status().isForbidden());
-        assertEquals(403, postJson("profile", Map.of("fullName", "Staff", "phone", ""), staffSession).getResponse().getStatus());
+        assertEquals(200, postJson("profile", Map.of("fullName", "Staff", "phone", ""), staffSession).getResponse().getStatus());
     }
 
-    @Test void passwordResetIsOneTimeAndRevokesExistingSession() throws Exception {
-        var session = passwordSession();
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "CINEMA_STAFF"})
+    void provisionedRolesEditOwnProfileWithoutChangingIdentityOrPermissions(String role) throws Exception {
+        passwordSession();
+        jdbc.update("update movie_app.users set role=?", role);
+        var login = postJson("login", Map.of("email", email, "password", "Password123"), null);
+        var session = (MockHttpSession) login.getRequest().getSession();
+        String id = body(login).get("user").get("id").asText();
+        var saved = postJson("profile", Map.of("fullName", "  Updated team member  ", "phone", "+84 901234567"), session);
+        assertEquals(200, saved.getResponse().getStatus());
+        var profile = mvc.perform(get("/api/v1/identity/profile").session(session)).andExpect(status().isOk()).andReturn();
+        assertEquals(id, body(profile).get("id").asText());
+        assertEquals(role, body(profile).get("role").asText());
+        assertEquals(email, body(profile).get("email").asText());
+        assertEquals("Updated team member", body(profile).get("fullName").asText());
+        assertEquals("+84 901234567", jdbc.queryForObject("select phone from movie_app.users", String.class));
+        mvc.perform(post("/api/v1/identity/profile").session(session).contentType("application/json")
+            .content("{\"fullName\":\"Forged\"}")).andExpect(status().isForbidden());
+        if ("CINEMA_STAFF".equals(role))
+            mvc.perform(get("/api/v1/admin/movies").session(session)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/tickets/mine").session(session)).andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"CUSTOMER", "ADMIN"})
+    void passwordResetIsOneTimeAndRevokesExistingSession(String role) throws Exception {
+        passwordSession();
+        jdbc.update("update movie_app.users set role=?", role);
+        var login = postJson("login", Map.of("email", email, "password", "Password123"), null);
+        var session = (MockHttpSession) login.getRequest().getSession();
+        var accountBeforeReset = identity.authenticate(email, "Password123");
         identity.requestPasswordReset(email);
         String token = sentReset;
         identity.resetPassword(token, "ChangedPassword123");
         assertThrows(RuntimeException.class, () -> identity.resetPassword(token, "AnotherPassword123"));
         assertThrows(RuntimeException.class, () -> identity.authenticate(email, "Password123"));
         assertTrue(identity.authenticate(email, "ChangedPassword123").active());
+        assertEquals(accountBeforeReset.id(), identity.authenticate(email, "ChangedPassword123").id());
+        assertEquals(role, identity.authenticate(email, "ChangedPassword123").role());
         mvc.perform(get("/api/v1/identity/me").session(session)).andExpect(status().isUnauthorized());
     }
 
@@ -403,7 +512,7 @@ class IdentityIntegrationTests {
         var request = postJson("password-reset", Map.of("email", email), null);
         assertEquals(200, request.getResponse().getStatus());
         assertEquals("REQUEST_ACCEPTED", body(request).get("status").asText());
-        verify(mail).passwordReset(eq(email), anyString());
+        verify(mail).passwordReset(eq(email), anyString(), eq(account.fullName()));
         var token = sentReset;
         assertNotNull(token);
         var confirm = postJson("password-reset/confirm", Map.of("token", token, "password", "NewPassword123"), null);

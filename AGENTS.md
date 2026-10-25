@@ -88,6 +88,9 @@ Email verification is required both during initial customer registration and whe
 
 Admins:
 - Use seeded/provisioned Admin accounts; public registration does not create Admin accounts.
+- Owner decision (2026-10-25): an `ACTIVE` Admin with a verified email may use Forgot password to receive a reset link at that current verified email. Reset preserves the Admin identity and role, uses a one-time token expiring after 30 minutes, and invalidates existing sessions after the password changes. Cinema Staff remain ineligible for Forgot password.
+- Owner decision (2026-10-24): Admin can list accounts and change an existing verified account between `ACTIVE` and `SUSPENSE`. `SUSPENSE` blocks password and Google login and invalidates existing sessions on their next request. Status updates must not bypass Customer email verification or change the acting Admin's own status.
+- Admin can browse all Bookings across dates and states. Booking cancellation and cancellation email notifications are deferred for consideration; this does not authorize cancellation of confirmed purchases.
 - Can create and edit movie information.
 - Can configure the available Locations, Cinemas, and Halls used by the project.
 - Can configure each Cinema's check-in opening minutes before Showtime start and closing minutes after Showtime start. Each Cinema requires its own nonnegative values; the application must not invent a universal time window.

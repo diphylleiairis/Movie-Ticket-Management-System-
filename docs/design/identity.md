@@ -65,11 +65,26 @@ forwards these settings. The optional `google` profile enables local OIDC; `dev`
 alone still supports email/password without Google credentials. Production
 continues to use `prod` with the deployed callback above.
 
+If clicking Google locally immediately returns a 404 Whitelabel page at
+`/oauth2/authorization/google`, check the running backend profile with
+`docker compose exec -T backend printenv SPRING_PROFILES_ACTIVE`. A container
+running only `dev` does not load `application-google.yml` and has no Google OIDC
+registration. Supply both Google credentials in the root `.env`, set
+`SPRING_PROFILES_ACTIVE=dev,google`, and run `docker compose up -d --build backend`.
+Changing `.env` without recreating the running container does not update its
+environment. The entry endpoint should then redirect to Google; completing login
+also requires the exact local callback registered in Google Cloud. Do not enable
+the `google` profile with empty credentials or paste secrets into logs or chat.
+
 Rebuild Vercel after changing these values. Cookies are host-only, HttpOnly, Path=/,
 SameSite=Lax and Secure in production. Keep OAuth entry, callback and subsequent
 API requests on that same public frontend origin. Redirect destinations are a fixed
 frontend origin plus an allowed local page path; arbitrary `returnTo` URLs are rejected.
 Use `/api/v1/health` for Render health checks (HTTP startup only).
+
+Frontend Identity actions allow up to 180 seconds (three minutes) per request,
+including the preceding CSRF request, to accommodate Render free-plan startup.
+Responses are processed as soon as they arrive; this is a timeout, not a fixed delay.
 
 ## Email/password accounts
 
@@ -136,11 +151,29 @@ existing Customer account. The Google provider link and Customer ID stay intact,
 so both Google and email/password sign-in work afterward. The email goes only to
 the current verified account email. Missing accounts return `ACCOUNT_NOT_FOUND`;
 accounts whose status is not `ACTIVE` return `ACCOUNT_UNAVAILABLE` and must contact
-an administrator (owner decision, 2026-10-20). Active unverified and non-Customer
-accounts remain ineligible and receive `REQUEST_ACCEPTED` without a reset email.
+an administrator (owner decision, 2026-10-20). Owner decision (2026-10-25): an
+ACTIVE Admin with a verified email may use the same reset flow. The request and
+confirmation both enforce that eligibility; the account ID and Admin role remain
+unchanged. Unverified accounts and Cinema Staff remain ineligible and receive
+`REQUEST_ACCEPTED` without a reset email. An Admin must have `email_verified_at`
+recorded during trusted provisioning; the application does not mark it verified
+merely to allow a reset.
+
+If a local Admin reset reports success but there is no Resend request, first check
+the account's role, ACTIVE status and verified-email marker. The previous backend
+accepted Admin requests without creating a token or calling the mail provider.
+After updating backend source, rebuild the local image with
+`docker compose up -d --build backend`; restarting an old image does not include
+the fix. Customer/Admin resets share the configured Resend sender and template.
 
 Both Resend and SMTP reset emails contain a clickable link built from the backend's
 trusted `identity.frontend-url`: `/reset-password#token=<opaque-token>`.
+Resend uses the published template alias `password-reset`, passing `RESET_URL`
+as that link and `USER_NAME` as the account's stored full name. The request contains
+no inline `text`/`html`; the template owns the email body and should explain that
+the link expires in thirty minutes and can be used once. Keep the template published
+in the same Resend account as `RESEND_API_KEY`. No additional environment variable
+is needed. SMTP continues to use the inline plain-text message.
 The fragment keeps the token out of HTTP request URLs and referrer headers.
 The frontend reads it automatically, asks for a new password and confirmation,
 then submits the token to the CSRF-protected confirm API. Opening the link alone

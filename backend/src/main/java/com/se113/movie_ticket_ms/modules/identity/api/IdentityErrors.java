@@ -10,7 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = IdentityController.class)
+@RestControllerAdvice(assignableTypes = {IdentityController.class, AdminUsersController.class})
 public class IdentityErrors {
     @ExceptionHandler(IdentityException.class)
     ResponseEntity<?> identity(IdentityException ex) {

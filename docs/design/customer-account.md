@@ -1,14 +1,26 @@
 # Customer account and My Tickets
 
-The header's signed-in user icon opens `/account`; anonymous visitors go to login
-with `/account` preserved as their return destination. The page reuses the existing
+The header's Customer icon opens `/account`; anonymous visitors go to login
+with their current page preserved as the return destination. Admin and Cinema Staff
+icons open an account dropdown with Edit profile (`/account`). Admin also has an
+Admin dashboard link (`/admin`). Owner decision (2026-10-25): defer the Staff
+dashboard; its dropdown entry is disabled and labelled Coming soon, without linking
+to an unimplemented route. The dropdown closes on navigation, outside click,
+focus leaving it, or Escape; Escape returns focus to the account icon.
+While the session check is pending, the icon shows a disabled loading indicator.
+Only a confirmed 401 from Identity makes it a sign-in link. Network/server errors
+or malformed responses show a retry button instead of treating the user as signed
+out. Each page navigation checks the current session, and superseded responses
+cannot overwrite a newer session result. No browser-stored role authorizes access.
+The page reuses the existing
 SiteHeader, cream background, brown/gold accents, serif headings, Tailwind utilities
 and responsive layout. Account and ticket errors are shown independently.
 
 ## Profile (ID-05)
 
 Identity exposes authenticated `GET /api/v1/identity/profile` and CSRF-protected
-`POST /api/v1/identity/profile` with `{fullName, phone}`. Only Customers may update.
+`POST /api/v1/identity/profile` with `{fullName, phone}`. Owner decision (2026-10-25):
+active Customers, Admins and Cinema Staff may update their own name and phone.
 The principal determines the account ID; clients cannot select another account or
 change its role, status, email or password through this endpoint. Names are trimmed,
 required, and limited to 150 characters; phone is optional and validated server-side.
@@ -17,7 +29,8 @@ other sessions follow the existing account-version invalidation rule.
 
 Email is displayed read-only. Verified email change remains a separate ID-05
 workflow and is not implemented by this form. Updates preserve identity, provider
-links and historical Booking/Ticket snapshots.
+links and historical Booking/Ticket snapshots. Admin and Staff see only their
+profile form; Customer ticket content and requests are omitted for those roles.
 
 ## Tickets (TCK-01/02)
 
@@ -66,7 +79,14 @@ show an empty state rather than fabricated purchased tickets.
 Backend: `IdentityProfileTests`, `MyTicketsTests`, `TicketQrTokensTests`; opt-in
 `IdentityIntegrationTests` covers persistence, CSRF and session refresh. TestCafe
 `account.test.js` uses deterministic mocked API responses for profile editing,
-QR states, filters, mobile width and anonymous redirects. Run the UI suite with
+QR states, filters, mobile width and anonymous redirects. It also covers Admin/Staff
+dropdowns, dashboard availability, keyboard/outside-click dismissal and saving
+their own profile without requesting Customer tickets. `IdentityProfileTests`
+covers all three roles, invalid fields and suspended-account denial; the opt-in
+integration suite checks provisioned-role updates retain identity, session, CSRF
+and role boundaries. `account-session.test.js` holds Identity responses until after
+the profile click to reproduce the pending-session redirect regression, and checks
+error/malformed-response retry, confirmed anonymous access and logout. Run the UI suite with
 `npm run test:e2e:pages`; it also retains the existing page-recovery scenarios.
 Real PostgreSQL Identity tests use only the documented isolated `identity_tests`
 database. No test sends real mail or purchases tickets.

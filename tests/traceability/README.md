@@ -1,10 +1,30 @@
 # Traceability
 
+Admin Movie creation: [CAT-A01–12](../test-cases/admin-movies.md) maps CAT-01/ID-04
+to `AdminMoviesTests`, `AdminMoviesSecurityTests`, the dedicated Movie creation
+scenario in `IdentityIntegrationTests`, TestCafe `admin-movies.test.js` and
+catalog/report cache invalidation in `check-admin-prefetch.mjs`.
+CAT-A09–12 add `MoviePostersTests`, `SupabasePosterStorageTests`,
+`AdminMoviePostersSecurityTests` and poster scenarios in `admin-movies.test.js`.
+
+Admin account/Booking workspace: [management cases](../test-cases/admin-management.md)
+maps the 2026-10-24 owner decision and ID-04 to `AdminAccountStatusTests`,
+`AdminManagementSecurityTests`, `AdminBookingsTests`, the suspension scenario in
+`IdentityIntegrationTests` and TestCafe `admin-dashboard.test.js`.
+ADM-M09–11 map prefetch, cache ownership, background refresh and late-read protection
+to `check-admin-prefetch.mjs` and the delayed-response/access-revocation TestCafe cases.
+
 Map requirements to acceptance criteria, test cases, automated tests, and execution results here.
 
-Customer account: [ACC-01–10](../test-cases/customer-account.md) maps ID-05 and
+Admin dashboard: [ADM-01–10](../test-cases/admin-dashboard.md) maps ID-04 to
+`AdminDashboardSecurityTests` and `AdminDashboardTests` for the overview API.
+TestCafe also verifies Overview stays the default and User/Booking navigation
+preserves the sidebar and browser document.
+See [design and commands](../../docs/design/admin-dashboard.md).
+
+Customer account: [ACC-01–14](../test-cases/customer-account.md) maps ID-02/04/05 and
 TCK-01/02/03 to IdentityProfileTests, MyTicketsTests, TicketQrTokensTests,
-IdentityIntegrationTests and `account.test.js`. See [design/run instructions](../../docs/design/customer-account.md).
+IdentityIntegrationTests, `account.test.js` and `account-session.test.js`. See [design/run instructions](../../docs/design/customer-account.md).
 
 Identity: [acceptance cases](../test-cases/identity.md) map ID-01/02/03/04 and
 [ADR 0006](../../docs/adr/0006-google-verified-customer-identity.md) to
@@ -26,3 +46,8 @@ using the default same-origin backend entry path without a frontend override.
 ID-T19 maps the owner decision on 2026-10-19 to backend integration and TestCafe
 coverage for Google Customers creating a first password using the reset email,
 then signing in through both methods with the same Customer ID.
+
+ID-T22 maps the 2026-10-25 Admin password-reset decision to
+`IdentityPasswordResetTests` and the Customer/Admin cases of
+`passwordResetIsOneTimeAndRevokesExistingSession` in `IdentityIntegrationTests`.
+The shared Resend template remains covered by `ResendIdentityMailTests`.
