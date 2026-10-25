@@ -45,6 +45,40 @@ authorized redirect URI in Google Cloud. Vercel must proxy `/api/:path*`,
 `/oauth2/:path*` and `/login/oauth2/code/:path*` to the same Render backend, before
 the SPA fallback. The checked-in callback rewrite fixes a missing `.onrender.com`.
 
+### Database connection budget
+
+All application instances using the same Supabase session pool share its capacity.
+The observed project limit is 15 session clients. Hikari defaults to a pool of ten
+with the same minimum idle count, so a local backend plus Render or an overlapping
+deployment can exhaust that limit before Hibernate reads JDBC metadata.
+
+The backend and Compose default to at most three connections per instance,
+zero minimum idle connections and a 60-second idle timeout. These are deployment
+settings, not a change to the 50-customer-session demonstration target. Reassess
+the total connection budget before increasing instance count or pool size; reserve
+headroom for an old/new deployment overlap and other clients. Load performance
+must be measured separately.
+
+For an existing Render deployment, set these Environment variables and redeploy:
+
+```dotenv
+SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=3
+SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0
+SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=60000
+```
+
+Apply local Compose changes with `docker compose up -d backend`; this recreates
+the backend with the environment overrides without rebuilding the image. A JVM
+already running with its old pool keeps its connections until it closes them or
+is restarted. Close unneeded application instances using this project database.
+
+When startup shows `Unable to determine Dialect without JDBC metadata`, inspect
+the preceding JDBC error. `FATAL: (EMAXCONNSESSION)` means the session pool is full;
+setting a Hibernate dialect does not free any connections. Do not kill unrelated
+database sessions or change pooler mode to address that symptom.
+See [Hikari configuration](https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby)
+and [Supabase connection pooling limits](https://supabase.com/docs/guides/database/connecting-to-postgres/pooling-and-limits).
+
 Vercel build environment:
 
 ```dotenv
